@@ -25,7 +25,8 @@ void prof_evlist__init(struct prof_evlist *evlist);
 
 void prof_evlist__delete(struct prof_evlist *evlist);
 
-int prof_evlist_parse(const char *str, struct perf_event_attr *attrs);
+int prof_evlist__add_from_str(struct prof_evlist *evlist,
+				const char *str);
 
 void prof_evlist__dump(struct prof_evlist *evlist);
 

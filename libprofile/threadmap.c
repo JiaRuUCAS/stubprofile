@@ -87,3 +87,15 @@ void thread_map__dump(struct thread_map *map)
 		LOG_INFO("thread %d", PID(map, i));
 	}
 }
+
+int thread_map__getindex(struct thread_map *map, int pid)
+{
+	int i = 0, nthread = 0;
+
+	nthread = thread_map__nr(map);
+	for (i = 0; i < nthread; i++) {
+		if (pid == PID(map, i))
+			return i;
+	}
+	return -1;
+}

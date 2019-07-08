@@ -5,11 +5,26 @@
 
 struct profile_info {
 	/* List of events */
-	struct perf_event_attr evlist[PROF_EVENT_MAX];
+	struct prof_evlist *evlist;
 	/* Number of events */
 	uint8_t nb_event;
 	/* log file */
 	FILE *flog;
+};
+
+enum {
+	PROF_STATE_UNINIT = 0,
+	PROF_STATE_INIT,
+	PROF_STATE_STOP,
+	PROF_STATE_RUNNING,
+	PROF_STATE_ERROR,
+};
+
+// per-thread data
+struct profile_tinfo {
+	int pid;
+	int tid;
+	uint8_t state;
 };
 
 enum {
@@ -32,7 +47,7 @@ void profile_log(uint8_t level, const char *format, ...);
 #define LOG_DEBUG(format, ...)
 #endif
 
-void *profile_init(char *evlist, char *logfile);
+void *profile_init(char *evlist_str, char *logfile);
 
 void profile_exit(void);
 

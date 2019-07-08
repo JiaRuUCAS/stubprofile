@@ -43,35 +43,35 @@ void prof_evlist__delete(struct prof_evlist *evlist)
 	evlist = NULL;
 }
 
-//static int
-//__prof_evlist__add(struct prof_evlist *evlist, char *str)
-//{
-//	struct perf_event_attr attr;
-//	char *name = NULL;
-//	struct prof_evsel *evsel = NULL;
-//
-//	name = prof_evsel__parse(str, &attr);
-//	if (name == NULL) {
-//		LOG_ERROR("Failed to parse event %s", str);
-//	} else {
-//		evsel = prof_evsel__new(NULL, name);
-//		if (evsel == NULL) {
-//			LOG_ERROR("Failed to create prof_evsel for %s",
-//							name);
-//		} else {
-//			prof_evsel__init(evsel, &attr, evlist->nr_entries);
-//			evsel->evlist = evlist;
-//			list_add_tail(&evsel->node, &evlist->entries);
-//			evlist->nr_entries++;
-//			return 1;
-//		}
-//	}
-//	return 0;
-//}
+static int
+__prof_evlist__add(struct prof_evlist *evlist, char *str)
+{
+	struct perf_event_attr attr;
+	char *name = NULL;
+	struct prof_evsel *evsel = NULL;
+
+	name = prof_evsel__parse(str, &attr);
+	if (name == NULL) {
+		LOG_ERROR("Failed to parse event %s", str);
+	} else {
+		evsel = prof_evsel__new(NULL, name);
+		if (evsel == NULL) {
+			LOG_ERROR("Failed to create prof_evsel for %s",
+							name);
+		} else {
+			prof_evsel__init(evsel, &attr, evlist->nr_entries);
+			evsel->evlist = evlist;
+			list_add_tail(&evsel->node, &evlist->entries);
+			evlist->nr_entries++;
+			return 1;
+		}
+	}
+	return 0;
+}
 
 /* Usage: <event1>:<opt_list1>,<event2>:<opt_list2>,...*/
-int prof_evlist__parse(const char *str,
-				struct perf_event_attr *attrs)
+int prof_evlist__add_from_str(struct prof_evlist *evlist,
+				const char *str)
 {
 	char *pcur = NULL, *pnext = NULL, *tmp;
 	int len = 0, added = 0;
@@ -85,38 +85,15 @@ int prof_evlist__parse(const char *str,
 	while ((pnext = strchr(pcur, ',')) != NULL) {
 		*pnext = '\0';
 
-		if (added >= PROF_EVENT_MAX) {
-			LOG_WARN("Only support %d events at one time, ignore %s",
-							PROF_EVENT_MAX, pcur);
-			break;
-		}
-
-		if (!prof_evsel__parse(pcur, &attrs[added])) {
-			LOG_ERROR("No supported event named %s", pcur);
-			free(tmp);
-			return -ENOTSUP;
-		}
-		added ++;
+		added += __prof_evlist__add(evlist, pcur);
 
 		if ((pnext - tmp) == (len - 1))
 			break;
 		pcur = pnext + 1;
 	}
 
-	if ((pcur - tmp) < (len - 1)) {
-		if (added < PROF_EVENT_MAX) {
-			if (!prof_evsel__parse(pcur, &attrs[added])) {
-				LOG_ERROR("No supported event named %s", pcur);
-				free(tmp);
-				return -ENOTSUP;
-			}
-			added ++;
-		}
-		else {
-			LOG_WARN("Only support %d events at one time, ignore %s",
-							PROF_EVENT_MAX, pcur);
-		}
-	}
+	if ((pcur - tmp) < (len - 1))
+		added += __prof_evlist__add(evlist, pcur);
 
 	free(tmp);
 	return added;

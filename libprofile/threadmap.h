@@ -14,6 +14,8 @@ struct thread_map *thread_map__new(pid_t pid);
 void thread_map__free(struct thread_map *map);
 void thread_map__dump(struct thread_map *map);
 
+int thread_map__getindex(struct thread_map *map, int pid);
+
 
 static inline int thread_map__nr(struct thread_map *map)
 {

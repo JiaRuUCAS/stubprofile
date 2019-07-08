@@ -32,6 +32,6 @@ void profile_log(uint8_t level, const char *format, ...);
 #define LOG_DEBUG(format, ...)
 #endif
 
-void profile_init(char *evlist, char *logfile);
+void *profile_init(char *evlist, char *logfile);
 
 #endif	// __PROFILE_H__

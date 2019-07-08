@@ -36,20 +36,30 @@ void profile_log(uint8_t level, const char *format, ...)
 	fprintf(fout, "\n");
 }
 
-void profile_init(char *evlist, char *logfile)
+void *profile_init(char *evlist, char *logfile)
 {
 	int pid;
 	struct profile_info *info = &globalinfo;
 	char buf[32];
+	FILE *fp = NULL;
 
 	pid = getpid();
 	thread_pid = syscall(__NR_gettid);
 
-	snprintf(buf, 32, "profile_%d.log", pid);
+	if (strlen(logfile) == 0)
+		snprintf(buf, 32, "profile_%d.log", pid);
+	else
+		snprintf(buf, 32, "%s", logfile);
 
-	info->flog = fopen(buf, "w");
-	if (!info->flog) {
+	fp = fopen(buf, "w");
+	if (!fp) {
 		LOG_ERROR("Failed to open log file %s, using stdout/stderr",
 						buf);
+		return (void *)-1;
 	}
+	LOG_INFO("Create log file %s", buf);
+	info->flog = fp;
+
+	LOG_INFO("Test log file");
+	return (void *)0;
 }

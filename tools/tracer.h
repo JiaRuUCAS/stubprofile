@@ -16,7 +16,7 @@ class BPatch_object;
 class FuncMap;
 
 #define TRACER_CMD "tracer"
-#define TRACER_LIB "/home/jr/stubprofile/build/lib/libfunccnt.so"
+#define TRACER_LIB "/home/jr/stubprofile/build/lib/libprofile.so"
 
 class TracedFunc{
 	public:
@@ -44,7 +44,8 @@ class TracerTest: public Test {
 		void getUserObjects(BPatch_Vector<BPatch_object *> &objs);
 		BPatch_function *findFunction(
 						BPatch_object *obj, std::string name);
-		bool insertCount(void);
+		bool callInit(BPatch_object *lib);
+		bool insertCount(BPatch_object *lib);
 
 	public:
 		TracerTest(void);

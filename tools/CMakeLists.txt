@@ -15,7 +15,7 @@ set(BOOST_LIBS boost_atomic
 				boost_timer)
 
 # set c++11 flags for gcc
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -std=c++11")
 
 ######################### tracer ############################
 # set source files

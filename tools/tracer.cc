@@ -91,10 +91,56 @@ detach_out:
 	return false;
 }
 
-bool TracerTest::insertCount(void)
+bool TracerTest::callInit(BPatch_object *lib)
+{
+	BPatch_function *init_func = NULL;
+	void *init_ret = NULL;
+	bool err;
+
+	LOG_INFO("Load init function");
+	init_func = findFunction(lib, "profile_init");
+	if (!init_func) {
+		LOG_ERROR("Failed to load init function");
+		return false;
+	}
+
+	LOG_INFO("Insert init function");
+	vector<BPatch_snippet *> init_arg;
+	BPatch_constExpr evlist("cpu-cycles");
+	BPatch_constExpr logfile("");
+
+	init_arg.push_back(&evlist);
+	init_arg.push_back(&logfile);
+
+	BPatch_funcCallExpr init_expr(*init_func, init_arg);
+
+	LOG_INFO("Execute init function");
+	init_ret = proc->oneTimeCode(init_expr, &err);
+	if (err) {
+		LOG_ERROR("Failed to execute init function");
+		return false;
+	}
+	else if (init_ret == (void *)-1) {
+		LOG_ERROR("Init function returns error, %p", init_ret);
+		return false;
+	}
+
+	return true;
+}
+
+bool TracerTest::insertCount(BPatch_object *lib)
 {
 	unsigned int fun_id = 0;
 
+	LOG_INFO("Load counting functions");
+	pre_cnt = findFunction(lib, "funcc_count_pre");
+	post_cnt = findFunction(lib, "funcc_count_post");
+	if (!pre_cnt || !post_cnt) {
+		LOG_ERROR("Failed to load counting functions");
+		return false;
+	}
+
+	LOG_INFO("Insert counting functions");
 	for (unsigned i = 0; i < trace_funcs.size(); i++) {
 		TracedFunc *tf = &trace_funcs[i];
 		vector<BPatch_point *> *pentry = NULL, *pexit = NULL;
@@ -150,30 +196,27 @@ bool TracerTest::insertCount(void)
 
 bool TracerTest::process(void)
 {
-	BPatch_object *libcnt = NULL;
+	BPatch_object *lib = NULL;
 
 	// load libfunccnt.so
 	LOG_INFO("Load libfunccnt.so");
-	libcnt = proc->loadLibrary(TRACER_LIB);
-	if (!libcnt) {
+	lib = proc->loadLibrary(TRACER_LIB);
+	if (!lib) {
 		LOG_ERROR("Failed to load %s", TRACER_LIB);
 		return false;
 	}
 
-	// load functions
-	LOG_INFO("Load counting functions");
-	pre_cnt = findFunction(libcnt, "funcc_count_pre");
-	post_cnt = findFunction(libcnt, "funcc_count_post");
-	if (!pre_cnt || !post_cnt) {
-		LOG_ERROR("Failed to load counting functions");
+	// insert init function
+	if (!callInit(lib)) {
+		LOG_ERROR("Failed to call init function");
 		return false;
 	}
 
-	// insert counting functions
-	if (!insertCount()) {
-		LOG_ERROR("Failed to insert functions");
-		return false;
-	}
+//	// insert counting functions
+//	if (!insertCount(lib)) {
+//		LOG_ERROR("Failed to insert counting functions");
+//		return false;
+//	}
 
 	// continue the tracee
 	if (!proc->continueExecution()) {

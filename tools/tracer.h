@@ -16,7 +16,7 @@ class BPatch_object;
 class FuncMap;
 
 #define TRACER_CMD "tracer"
-#define TRACER_LIB "/home/jr/dyninst-master/build/dyninst_test/libfunccnt/libfunccnt.so"
+#define TRACER_LIB "/home/jr/stubprofile/build/lib/libfunccnt.so"
 
 class TracedFunc{
 	public:

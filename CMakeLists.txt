@@ -3,8 +3,13 @@ project (stubprofile)
 
 set(CMALE_CXX_STANDARD 11)
 
+#set(CMAKE_SKIP_RPATH TRUE)
+#set(CMAKE_SKIP_INSTALL_RPATH TRUE)
+
 # set installation path
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build)
+set(LIB_INSTALL ${CMAKE_INSTALL_PREFIX}/lib) 
+set(HEADER_INSTALL ${CMAKE_INSTALL_PREFIX}/include)  
 
 # set cmake searching path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
@@ -31,3 +36,4 @@ add_subdirectory(tools)
 
 message("Please set environment variables as follows:")
 message("DYNINSTAPI_RT_LIB=${DYNINST_BUILD_PATH}/lib/libdyninstAPI_RT.so")
+message("LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${DYNINST_BUILD_PATH}/lib")

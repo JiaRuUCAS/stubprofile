@@ -27,3 +27,10 @@ set(TRACER_SRC tracer.cc
 # add build target
 add_executable(stubprofile ${TRACER_SRC})
 target_link_libraries(stubprofile ${BOOST_LIBS} dyninstAPI)
+
+set_target_properties(stubprofile PROPERTIES INSTALL_RPATH "${DYNINST_BUILD_PATH}/lib")
+
+install(TARGETS stubprofile
+		RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
+		LIBRARY DESTINATION ${LIB_INSTALL}
+		ARCHIVE DESTINATION ${LIB_INSTALL})

@@ -224,13 +224,12 @@ void TracerTest::getTraceFunctions(BPatch_object *obj, FuncMap *fmap)
 }
 
 #define OSLIBPATH_PREFIX "/lib/"
-#define DYNINSTLIB_PREFIX "/home/jr/dyninst-master/build/lib/"
+
 void TracerTest::getUserObjects(BPatch_Vector<BPatch_object *> &objs)
 {
 	BPatch_Vector<BPatch_object *> allobjs;
 	BPatch_object *obj = NULL;
 	string osprefix(OSLIBPATH_PREFIX);
-	string diprefix(DYNINSTLIB_PREFIX);
 
 	proc->getImage()->getObjects(allobjs);
 	for (unsigned i = 0; i < allobjs.size(); i++) {
@@ -240,10 +239,11 @@ void TracerTest::getUserObjects(BPatch_Vector<BPatch_object *> &objs)
 		path = obj->pathName();
 
 		if (!path.compare(0, osprefix.size(), osprefix) ||
-						!path.compare(0, diprefix.size(), diprefix)) {
+						obj->name().find("dyninst") != (size_t)-1) {
 			LOG_INFO("\tSkip object %s", obj->name().c_str());
 			continue;
 		}
+
 		objs.push_back(obj);
 	}
 }

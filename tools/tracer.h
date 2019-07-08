@@ -45,7 +45,10 @@ class TracerTest: public Test {
 		BPatch_function *findFunction(
 						BPatch_object *obj, std::string name);
 		bool callInit(BPatch_object *lib);
+		bool insertExit(BPatch_object *lib);
 		bool insertCount(BPatch_object *lib);
+
+		void clearSnippets(void);
 
 	public:
 		TracerTest(void);

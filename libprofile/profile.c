@@ -29,7 +29,7 @@ void profile_log(uint8_t level, const char *format, ...)
 	else
 		fout = stdout;
 
-	fprintf(fout, "[%s][%d]:", log_tag[level], thread_pid);
+	fprintf(fout, "[%s][%d]: ", log_tag[level], thread_pid);
 	va_start(va, format);
 	vfprintf(fout, format, va);
 	va_end(va);
@@ -62,4 +62,14 @@ void *profile_init(char *evlist, char *logfile)
 
 	LOG_INFO("Test log file");
 	return (void *)0;
+}
+
+void profile_exit(void)
+{
+	LOG_INFO("Profile exit.");
+
+	if (globalinfo.flog) {
+		fclose(globalinfo.flog);
+		globalinfo.flog = NULL;
+	}
 }

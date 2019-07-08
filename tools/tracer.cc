@@ -170,7 +170,6 @@ bool TracerTest::insertCount(BPatch_object *lib)
 
 		BPatch_funcCallExpr pre_expr(*pre_cnt, cnt_arg);
 		BPatch_funcCallExpr post_expr(*post_cnt, cnt_arg);
-
 		// insert counting functions
 		LOG_INFO("Insert pre_cnt into %s",
 						tf->func->getName().c_str());
@@ -194,12 +193,42 @@ bool TracerTest::insertCount(BPatch_object *lib)
 	return true;
 }
 
+bool TracerTest::insertExit(BPatch_object *lib)
+{
+	BPatch_function *fexit = NULL;
+	BPatch_Vector<BPatch_snippet *> exit_arg;
+	BPatch_Vector<BPatch_function *> funcs;
+
+	fexit = findFunction(lib, "profile_exit");
+	if (!fexit) {
+		LOG_ERROR("Failed to insert exit function");
+		return false;
+	}
+
+	BPatch_funcCallExpr exit_expr(*fexit, exit_arg);
+
+	proc->getImage()->findFunction("_fini", funcs);
+	for (unsigned int i = 0; i < funcs.size(); i++) {
+		BPatch_module *mod = funcs[i]->getModule();
+
+		if (!mod->isSharedLib()) {
+			LOG_INFO("Insert exit function to %s",
+							mod->getObject()->name().c_str());
+			mod->getObject()->insertFiniCallback(exit_expr);
+
+			trace_funcs.push_back(TracedFunc(funcs[i], UINT_MAX));
+		}
+	}
+
+	return true;
+}
+
 bool TracerTest::process(void)
 {
 	BPatch_object *lib = NULL;
 
 	// load libfunccnt.so
-	LOG_INFO("Load libfunccnt.so");
+	LOG_INFO("Load libprofile.so");
 	lib = proc->loadLibrary(TRACER_LIB);
 	if (!lib) {
 		LOG_ERROR("Failed to load %s", TRACER_LIB);
@@ -210,6 +239,11 @@ bool TracerTest::process(void)
 	if (!callInit(lib)) {
 		LOG_ERROR("Failed to call init function");
 		return false;
+	}
+
+	if (!insertExit(lib)) {
+		LOG_ERROR("Failed to insert exit function");
+		return false;		
 	}
 
 //	// insert counting functions
@@ -233,12 +267,30 @@ bool TracerTest::process(void)
 	return true;
 }
 
+void TracerTest::clearSnippets(void)
+{
+	if (proc->isTerminated())
+		return;
+
+	while (!proc->isStopped()) {
+		LOG_INFO("Try to stop the tracee");
+		proc->stopExecution();
+	}
+
+	LOG_INFO("Clear all snippets");
+	for (unsigned int i = 0; i < trace_funcs.size(); i++)
+		trace_funcs[i].func->removeInstrumentation(false);
+}
+
 void TracerTest::destroy(void)
 {
-	if (proc) {
-		LOG_ERROR("Detach process %d", pid);
-		proc->detach(true);
-	}
+	if (!proc)
+		return;
+
+	clearSnippets();
+
+	LOG_INFO("Detach process %d", pid);
+	proc->detach(true);
 }
 
 void TracerTest::getTraceFunctions(BPatch_object *obj, FuncMap *fmap)

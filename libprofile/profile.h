@@ -34,4 +34,6 @@ void profile_log(uint8_t level, const char *format, ...);
 
 void *profile_init(char *evlist, char *logfile);
 
+void profile_exit(void);
+
 #endif	// __PROFILE_H__

@@ -54,3 +54,6 @@ dkms.conf
 build/*
 makedir/*
 dyninst/makedir/*
+
+*CMakeFiles/*
+Makefile

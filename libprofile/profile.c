@@ -1,20 +1,22 @@
 #include <stdarg.h>
 
 #include "util.h"
+#include "list.h"
 #include "evlist.h"
 #include "threadmap.h"
 #include "profile.h"
 
-struct profile_info globalinfo = {
+struct prof_info globalinfo = {
 	.evlist = NULL,
-	.nb_event = 0,
+	.max_index = 0,
 	.flog = NULL,
 };
 
-__thread struct profile_tinfo tinfo = {
+__thread struct prof_tinfo tinfo = {
 	.pid = -1,
 	.tid = -1,
 	.state = PROF_STATE_UNINIT,
+	.func_counters = NULL,
 };
 
 static char *log_tag[PROF_LOG_NUM] = {
@@ -24,7 +26,7 @@ static char *log_tag[PROF_LOG_NUM] = {
 	[PROF_LOG_DEBUG] = "DEBUG",
 };
 
-void profile_log(uint8_t level, const char *format, ...)
+void prof_log(uint8_t level, const char *format, ...)
 {
 	va_list va;
 	FILE *fout = NULL;
@@ -43,7 +45,7 @@ void profile_log(uint8_t level, const char *format, ...)
 	fprintf(fout, "\n");
 }
 
-static int __create_evlist(struct profile_info *info,
+static int __create_evlist(struct prof_info *info,
 				char *evlist_str, int pid)
 {
 	struct prof_evlist *evlist = NULL;
@@ -71,7 +73,6 @@ static int __create_evlist(struct profile_info *info,
 					thread_map__nr(evlist->threads));
 
 	info->evlist = evlist;
-	info->nb_event = evlist->nr_entries;
 	return 0;
 
 fail_destroy_evlist:
@@ -82,30 +83,50 @@ fail_destroy_evlist:
 static void __init_thread(void)
 {
 	struct prof_evlist *evlist = globalinfo.evlist;
+	struct prof_tinfo *info = &tinfo;
 
-	tinfo.pid = syscall(__NR_gettid);
-	tinfo.tid = thread_map__getindex(evlist->threads, tinfo.pid);
-	if (tinfo.tid == -1) {
-		LOG_ERROR("No thread %d found in threadmap", tinfo.pid);
-		tinfo.state = PROF_STATE_ERROR;
+	info->pid = syscall(__NR_gettid);
+	info->tid = thread_map__getindex(evlist->threads, info->pid);
+	if (info->tid == -1) {
+		LOG_ERROR("No thread %d found in threadmap", info->pid);
+		info->state = PROF_STATE_ERROR;
 		return;
 	}
+
+	// allocate counter
+	info->func_counters = (uint64_t *)malloc(
+					sizeof(uint64_t) * (globalinfo.max_index + 1));
+	if (!info->func_counters) {
+		LOG_ERROR("Failed to allocate memory for function counters,"
+				  "its desired length is %u",
+				  globalinfo.max_index + 1);
+		info->state = PROF_STATE_ERROR;
+		return;
+	}
+	// insert this data into global list
+	INIT_LIST_HEAD(&info->node);
+	list_add_tail(&info->node, &globalinfo.thread_data);
+
 	tinfo.state = PROF_STATE_INIT;
-	LOG_INFO("Thread %d index %d", tinfo.pid, tinfo.tid);
+	LOG_INFO("Thread %d index %d, address %p",
+					tinfo.pid, tinfo.tid, info);
+	return;
 }
 
-void *profile_init(char *evlist_str, char *logfile)
+void *prof_init(char *evlist_str, char *logfile, unsigned max)
 {
 	int pid;
-	struct profile_info *info = &globalinfo;
+	struct prof_info *info = &globalinfo;
 	char buf[32];
 	FILE *fp = NULL;
 
 	pid = getpid();
 	tinfo.pid = syscall(__NR_gettid);
+	INIT_LIST_HEAD(&info->thread_data);
+	info->max_index = max;
 
 	if (strlen(logfile) == 0)
-		snprintf(buf, 32, "profile_%d.log", pid);
+		snprintf(buf, 32, "prof_%d.log", pid);
 	else
 		snprintf(buf, 32, "%s", logfile);
 
@@ -136,6 +157,23 @@ fail_close_log:
 	return (void *)-1;
 }
 
+static void __destroy_thread_data(void)
+{
+	struct prof_tinfo *iter = NULL, *info = NULL;
+	struct list_head *list = &globalinfo.thread_data;
+
+	list_for_each_entry_safe(info, iter, list, node) {
+		list_del_init(&info->node);
+		// clear counters
+		if (info->func_counters)
+			free(info->func_counters);
+		info->func_counters = NULL;
+		info->state = PROF_STATE_UNINIT;
+		LOG_INFO("Destroy data for thread, address %p",
+						info);
+	}
+}
+
 static void __destroy_evlist(void)
 {
 	struct prof_evlist *evlist = globalinfo.evlist;
@@ -147,11 +185,12 @@ static void __destroy_evlist(void)
 	globalinfo.evlist = NULL;
 }
 
-void profile_exit(void)
+void prof_exit(void)
 {
 	LOG_INFO("Profile exit.");
 
 	__destroy_evlist();
+	__destroy_thread_data();
 
 	if (globalinfo.flog) {
 		fclose(globalinfo.flog);

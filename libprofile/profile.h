@@ -3,13 +3,19 @@
 
 #define PROF_EVENT_MAX	10
 
-struct profile_info {
+#include "list.h"
+
+struct prof_info {
 	/* List of events */
 	struct prof_evlist *evlist;
-	/* Number of events */
-	uint8_t nb_event;
+	/* Max index of traced function */
+	unsigned max_index;
 	/* log file */
 	FILE *flog;
+	/* list of per-thread data.
+	 * It's used for safely termination.
+	 */
+	struct list_head thread_data;
 };
 
 enum {
@@ -21,10 +27,17 @@ enum {
 };
 
 // per-thread data
-struct profile_tinfo {
+struct prof_tinfo {
+	struct list_head node;
+
 	int pid;
 	int tid;
 	uint8_t state;
+
+	/* Per-function counters
+	 * Its length is (max_index + 1)
+	 */
+	uint64_t *func_counters;
 };
 
 enum {
@@ -35,20 +48,20 @@ enum {
 	PROF_LOG_NUM,
 };
 
-void profile_log(uint8_t level, const char *format, ...);
+void prof_log(uint8_t level, const char *format, ...);
 
-#define LOG_ERROR(format, ...) profile_log(PROF_LOG_ERROR, format, ##__VA_ARGS__)
-#define LOG_INFO(format, ...) profile_log(PROF_LOG_INFO, format, ##__VA_ARGS__)
-#define LOG_WARN(format, ...) profile_log(PROF_LOG_WARN, format, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...) prof_log(PROF_LOG_ERROR, format, ##__VA_ARGS__)
+#define LOG_INFO(format, ...) prof_log(PROF_LOG_INFO, format, ##__VA_ARGS__)
+#define LOG_WARN(format, ...) prof_log(PROF_LOG_WARN, format, ##__VA_ARGS__)
 
 #ifdef PF_DEBUG
-#define LOG_DEBUG(format, ...) profile_log(PROF_LOG_DEBUG, format, ##__VA_ARGS__)
+#define LOG_DEBUG(format, ...) prof_log(PROF_LOG_DEBUG, format, ##__VA_ARGS__)
 #else
 #define LOG_DEBUG(format, ...)
 #endif
 
-void *profile_init(char *evlist_str, char *logfile);
+void *prof_init(char *evlist_str, char *logfile, unsigned max_id);
 
-void profile_exit(void);
+void prof_exit(void);
 
 #endif	// __PROFILE_H__

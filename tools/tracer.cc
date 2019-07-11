@@ -91,6 +91,17 @@ detach_out:
 	return false;
 }
 
+static unsigned __getMaxIndex(vector<TracedFunc> &list)
+{
+	unsigned int i = 0, max = 0;
+
+	for (i = 0; i < list.size(); i++) {
+		if (max < list[i].index)
+			max = list[i].index;
+	}
+	return max;
+}
+
 bool TracerTest::callInit(BPatch_object *lib)
 {
 	BPatch_function *init_func = NULL;
@@ -98,7 +109,7 @@ bool TracerTest::callInit(BPatch_object *lib)
 	bool err;
 
 	LOG_INFO("Load init function");
-	init_func = findFunction(lib, "profile_init");
+	init_func = findFunction(lib, "prof_init");
 	if (!init_func) {
 		LOG_ERROR("Failed to load init function");
 		return false;
@@ -108,9 +119,11 @@ bool TracerTest::callInit(BPatch_object *lib)
 	vector<BPatch_snippet *> init_arg;
 	BPatch_constExpr evlist("cpu-cycles");
 	BPatch_constExpr logfile("");
+	BPatch_constExpr max_id(__getMaxIndex(trace_funcs));
 
 	init_arg.push_back(&evlist);
 	init_arg.push_back(&logfile);
+	init_arg.push_back(&max_id);
 
 	BPatch_funcCallExpr init_expr(*init_func, init_arg);
 
@@ -199,7 +212,7 @@ bool TracerTest::insertExit(BPatch_object *lib)
 	BPatch_Vector<BPatch_snippet *> exit_arg;
 	BPatch_Vector<BPatch_function *> funcs;
 
-	fexit = findFunction(lib, "profile_exit");
+	fexit = findFunction(lib, "prof_exit");
 	if (!fexit) {
 		LOG_ERROR("Failed to insert exit function");
 		return false;

@@ -1,4 +1,12 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <stdarg.h>
+#include <limits.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "util.h"
 #include "list.h"
@@ -8,7 +16,9 @@
 
 struct prof_info globalinfo = {
 	.evlist = NULL,
+	.min_index = UINT_MAX,
 	.max_index = 0,
+	.sample_freq = 0,
 	.flog = NULL,
 };
 
@@ -17,6 +27,8 @@ __thread struct prof_tinfo tinfo = {
 	.tid = -1,
 	.state = PROF_STATE_UNINIT,
 	.func_counters = NULL,
+	.nb_record = 0,
+//	.records = NULL,
 };
 
 static char *log_tag[PROF_LOG_NUM] = {
@@ -43,6 +55,8 @@ void prof_log(uint8_t level, const char *format, ...)
 	vfprintf(fout, format, va);
 	va_end(va);
 	fprintf(fout, "\n");
+
+	fflush(fout);
 }
 
 static int __create_evlist(struct prof_info *info,
@@ -72,6 +86,12 @@ static int __create_evlist(struct prof_info *info,
 	LOG_INFO("%d threads detected.",
 					thread_map__nr(evlist->threads));
 
+	// start all events
+	if (prof_evlist__start(evlist) < 0) {
+		LOG_ERROR("Failed to start events");
+		goto fail_destroy_evlist;
+	}
+
 	info->evlist = evlist;
 	return 0;
 
@@ -80,10 +100,52 @@ fail_destroy_evlist:
 	return -1;
 }
 
+#if 0
+static int __init_record(struct prof_tinfo *local)
+{
+	int fd = -1, ret = 0;
+	char buf[32] = {'\0'};
+	size_t size;
+	void *ptr = NULL;
+
+	snprintf(buf, 32, "prof_%d.data", local->pid);
+
+	size = sizeof(struct prof_record) * PROF_RECORD_MAX;
+
+	fd = open(buf, O_RDWR | O_CREAT, 0666);
+	if (fd < 0) {
+		LOG_ERROR("Failed to create record file %s, err %d",
+						buf, errno);
+		return -1;
+	}
+
+	ret = ftruncate(fd, size);
+	if (ret < 0) {
+		LOG_ERROR("Failed to resize the record file %s, err %d",
+						buf, errno);
+		close(fd);
+		return -1;
+	}
+
+	ptr = mmap(0, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+	if (ptr == MAP_FAILED) {
+		LOG_ERROR("Failed to mmap record file %s, err %d",
+						buf, errno);
+		close(fd);
+		return -1;
+	}
+	memset(ptr, 0, size);
+
+	local->records = ptr;
+	return 0;
+}
+#endif
+
 static void __init_thread(void)
 {
 	struct prof_evlist *evlist = globalinfo.evlist;
 	struct prof_tinfo *info = &tinfo;
+	unsigned int nb_funcs = globalinfo.max_index - globalinfo.min_index + 1;
 
 	info->pid = syscall(__NR_gettid);
 	info->tid = thread_map__getindex(evlist->threads, info->pid);
@@ -94,36 +156,52 @@ static void __init_thread(void)
 	}
 
 	// allocate counter
-	info->func_counters = (uint64_t *)malloc(
-					sizeof(uint64_t) * (globalinfo.max_index + 1));
+	info->func_counters = (struct prof_func *)malloc(
+					sizeof(struct prof_func) * nb_funcs);
 	if (!info->func_counters) {
 		LOG_ERROR("Failed to allocate memory for function counters,"
 				  "its desired length is %u",
-				  globalinfo.max_index + 1);
+				  nb_funcs);
 		info->state = PROF_STATE_ERROR;
 		return;
 	}
-	// insert this data into global list
-	INIT_LIST_HEAD(&info->node);
-	list_add_tail(&info->node, &globalinfo.thread_data);
+	LOG_INFO("Create %u function counters [%u-%u]",
+					nb_funcs,
+					globalinfo.min_index,
+					globalinfo.max_index);
+	memset(info->func_counters, 0, sizeof(struct prof_func) * nb_funcs);
 
-	tinfo.state = PROF_STATE_INIT;
+	memset(info->records, 0, sizeof(struct prof_record) * 4096);
+//	// allocate record storage
+//	if (__init_record(info) < 0) {
+//		LOG_ERROR("Failed to init record storage");
+//		free(info->func_counters);
+//		info->func_counters = NULL;
+//		info->state = PROF_STATE_ERROR;
+//		return;
+//	}
+
+
+	tinfo.state = PROF_STATE_RUNNING;
 	LOG_INFO("Thread %d index %d, address %p",
 					tinfo.pid, tinfo.tid, info);
 	return;
 }
 
-void *prof_init(char *evlist_str, char *logfile, unsigned max)
+void *prof_init(char *evlist_str, char *logfile,
+				unsigned min_id, unsigned max_id, unsigned freq)
 {
 	int pid;
 	struct prof_info *info = &globalinfo;
-	char buf[32];
 	FILE *fp = NULL;
+	char buf[32] = {'\0'};
 
 	pid = getpid();
 	tinfo.pid = syscall(__NR_gettid);
-	INIT_LIST_HEAD(&info->thread_data);
-	info->max_index = max;
+//	INIT_LIST_HEAD(&info->thread_data);
+	info->max_index = max_id;
+	info->min_index = min_id;
+	info->sample_freq = freq;
 
 	if (strlen(logfile) == 0)
 		snprintf(buf, 32, "prof_%d.log", pid);
@@ -145,8 +223,8 @@ void *prof_init(char *evlist_str, char *logfile, unsigned max)
 		goto fail_close_log;
 	}
 
-	// init current thread
-	__init_thread();
+//	// init current thread
+//	__init_thread();
 
 	return (void *)0;
 
@@ -157,21 +235,40 @@ fail_close_log:
 	return (void *)-1;
 }
 
-static void __destroy_thread_data(void)
+#if 1
+static void __test_print(struct prof_info *global, struct prof_tinfo *thread)
 {
-	struct prof_tinfo *iter = NULL, *info = NULL;
-	struct list_head *list = &globalinfo.thread_data;
+	struct prof_func *func = NULL;
+	unsigned int i = 0, nb_func = global->max_index - global->min_index + 1;
 
-	list_for_each_entry_safe(info, iter, list, node) {
-		list_del_init(&info->node);
-		// clear counters
-		if (info->func_counters)
-			free(info->func_counters);
-		info->func_counters = NULL;
-		info->state = PROF_STATE_UNINIT;
-		LOG_INFO("Destroy data for thread, address %p",
-						info);
+	if (!thread->func_counters)
+		return;
+
+	for (i = 0; i < nb_func; i++) {
+		func = &thread->func_counters[i];
+		if (func->counter == 0)
+			continue;
+
+		LOG_INFO("func %u: %u", global->min_index + i, func->counter);
 	}
+}
+#endif
+
+void prof_thread_exit(void)
+{
+	struct prof_tinfo *local = &tinfo;
+
+	LOG_INFO("Destroy per-thread data");
+	if (local->func_counters) {
+		__test_print(&globalinfo, local);
+		free(local->func_counters);
+		local->func_counters = NULL;
+	}
+
+//	if (local->records) {
+//		munmap(local->records, PROF_RECORD_MAX * sizeof(struct prof_record));
+//		local->records = NULL;
+//	}
 }
 
 static void __destroy_evlist(void)
@@ -189,11 +286,75 @@ void prof_exit(void)
 {
 	LOG_INFO("Profile exit.");
 
+	prof_thread_exit();
 	__destroy_evlist();
-	__destroy_thread_data();
 
 	if (globalinfo.flog) {
 		fclose(globalinfo.flog);
 		globalinfo.flog = NULL;
 	}
+}
+
+#if 1
+static void __read_count(struct prof_evlist *evlist,
+				unsigned int func_index, struct prof_tinfo *local)
+{
+	struct prof_evsel *evsel = NULL;
+	uint8_t i = 0;
+
+	evlist__for_each(evlist, evsel) {
+//		prof_evsel__rdpmc(evsel, local->tid);
+		local->records[local->nb_record].func_idx = func_index;
+		local->records[local->nb_record].ev_idx = i;
+		local->records[local->nb_record].count = prof_evsel__rdpmc(evsel, local->tid);
+		i++;
+		local->nb_record ++;
+//		if (local->nb_record == PROF_RECORD_MAX) {
+//			local->state = PROF_STATE_STOP;
+//			break;
+//		}
+		if (local->nb_record == 4096)
+			local->nb_record = 0;
+	}
+}
+#endif
+
+void prof_count_pre(unsigned int func_index)
+{
+	struct prof_info *global = &globalinfo;
+	struct prof_tinfo *local = &tinfo;
+//	struct prof_func *func = NULL;
+
+	if (local->state == PROF_STATE_UNINIT)
+		__init_thread();
+
+	if (local->state != PROF_STATE_RUNNING)
+		return;
+
+//	func = &local->func_counters[func_index - global->min_index];
+//	if (func->depth < PROF_FUNC_STACK_MAX) {
+//		func->stack[func->depth] = func->counter;
+//		func->counter ++;
+
+		__read_count(global->evlist, func_index, local);
+//	}
+//	func->depth ++;
+}
+
+void prof_count_post(unsigned int func_index)
+{
+	struct prof_info *global = &globalinfo;
+	struct prof_tinfo *local = &tinfo;
+//	struct prof_func *func = NULL;
+//	unsigned int cnt = 0;
+
+	if (local->state != PROF_STATE_RUNNING)
+		return;
+
+//	func = &local->func_counters[func_index - global->min_index];
+//	func->depth --;
+//	if (func->depth < PROF_FUNC_STACK_MAX) {
+//		cnt = func->counter[func->deep];
+		__read_count(global->evlist, func_index, local);
+//	}
 }

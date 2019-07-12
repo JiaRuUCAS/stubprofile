@@ -91,15 +91,24 @@ detach_out:
 	return false;
 }
 
-static unsigned __getMaxIndex(vector<TracedFunc> &list)
+struct range {
+	unsigned min, max;
+};
+
+static void __getIndexRange(vector<TracedFunc> &list, struct range *r)
 {
-	unsigned int i = 0, max = 0;
+	unsigned int i = 0, max = 0, min = UINT_MAX;
 
 	for (i = 0; i < list.size(); i++) {
+		if (list[i].index == UINT_MAX)
+			continue;
 		if (max < list[i].index)
 			max = list[i].index;
+		if (min > list[i].index)
+			min = list[i].index;
 	}
-	return max;
+	r->min = min;
+	r->max = max;
 }
 
 bool TracerTest::callInit(BPatch_object *lib)
@@ -107,6 +116,7 @@ bool TracerTest::callInit(BPatch_object *lib)
 	BPatch_function *init_func = NULL;
 	void *init_ret = NULL;
 	bool err;
+	struct range range;
 
 	LOG_INFO("Load init function");
 	init_func = findFunction(lib, "prof_init");
@@ -119,11 +129,17 @@ bool TracerTest::callInit(BPatch_object *lib)
 	vector<BPatch_snippet *> init_arg;
 	BPatch_constExpr evlist("cpu-cycles");
 	BPatch_constExpr logfile("");
-	BPatch_constExpr max_id(__getMaxIndex(trace_funcs));
+
+	__getIndexRange(trace_funcs, &range);
+	BPatch_constExpr min_id(range.min);
+	BPatch_constExpr max_id(range.max);
+	BPatch_constExpr freq((unsigned)0);
 
 	init_arg.push_back(&evlist);
 	init_arg.push_back(&logfile);
+	init_arg.push_back(&min_id);
 	init_arg.push_back(&max_id);
+	init_arg.push_back(&freq);
 
 	BPatch_funcCallExpr init_expr(*init_func, init_arg);
 
@@ -146,8 +162,8 @@ bool TracerTest::insertCount(BPatch_object *lib)
 	unsigned int fun_id = 0;
 
 	LOG_INFO("Load counting functions");
-	pre_cnt = findFunction(lib, "funcc_count_pre");
-	post_cnt = findFunction(lib, "funcc_count_post");
+	pre_cnt = findFunction(lib, "prof_count_pre");
+	post_cnt = findFunction(lib, "prof_count_post");
 	if (!pre_cnt || !post_cnt) {
 		LOG_ERROR("Failed to load counting functions");
 		return false;
@@ -158,6 +174,9 @@ bool TracerTest::insertCount(BPatch_object *lib)
 		TracedFunc *tf = &trace_funcs[i];
 		vector<BPatch_point *> *pentry = NULL, *pexit = NULL;
 		BPatchSnippetHandle *handle = NULL;
+
+		if (tf->index == UINT_MAX)
+			continue;
 
 		// find entry point
 		pentry = tf->func->findPoint(BPatch_entry);
@@ -211,7 +230,10 @@ bool TracerTest::insertExit(BPatch_object *lib)
 	BPatch_function *fexit = NULL;
 	BPatch_Vector<BPatch_snippet *> exit_arg;
 	BPatch_Vector<BPatch_function *> funcs;
+	BPatch_Vector<BPatch_point *> *exit_point = NULL;
+	BPatchSnippetHandle *handle = NULL;
 
+	// insert global exit function into _fini
 	fexit = findFunction(lib, "prof_exit");
 	if (!fexit) {
 		LOG_ERROR("Failed to insert exit function");
@@ -231,6 +253,36 @@ bool TracerTest::insertExit(BPatch_object *lib)
 
 			trace_funcs.push_back(TracedFunc(funcs[i], UINT_MAX));
 		}
+	}
+
+	// insert thread exit function into pthread_exit
+	// check if pthread_exit exists
+	funcs.clear();
+	proc->getImage()->findFunction("pthread_exit", funcs);
+	if (funcs.size() == 0) {
+		LOG_INFO("No pthread_exit found");
+		return true;
+	}
+
+	exit_point = funcs[0]->findPoint(BPatch_entry);
+	if (!exit_point) {
+		LOG_ERROR("Failed to find exit point for pthread_exit");
+		return true;
+	}
+
+	fexit = findFunction(lib, "prof_thread_exit");
+	if (!fexit) {
+		LOG_ERROR("Failed to insert thread exit function");
+		return false;
+	}
+
+	BPatch_funcCallExpr thread_exit_expr(*fexit, exit_arg);
+
+	handle = proc->insertSnippet(thread_exit_expr,
+					*exit_point, BPatch_callBefore);
+	if (!handle) {
+		LOG_ERROR("Failed to insert thread exit function");
+		return false;
 	}
 
 	return true;
@@ -259,11 +311,11 @@ bool TracerTest::process(void)
 		return false;		
 	}
 
-//	// insert counting functions
-//	if (!insertCount(lib)) {
-//		LOG_ERROR("Failed to insert counting functions");
-//		return false;
-//	}
+	// insert counting functions
+	if (!insertCount(lib)) {
+		LOG_ERROR("Failed to insert counting functions");
+		return false;
+	}
 
 	// continue the tracee
 	if (!proc->continueExecution()) {

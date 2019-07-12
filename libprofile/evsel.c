@@ -102,6 +102,10 @@ prof_evsel__enable(struct prof_evsel *evsel, int nthreads)
 		// get hardware counter index
 		pc = (struct perf_event_mmap_page *)data->mm_page;
 		data->hwc_index = pc->index;
+
+		LOG_INFO("Enable event %s for thread %d, hwc_index %u, cap_user_rdpmc %u",
+						evsel->name, thread, data->hwc_index,
+						pc->cap_user_rdpmc);
 	}
 	evsel->is_enable = 1;
 
@@ -198,7 +202,7 @@ prof_evsel__open(struct prof_evsel *evsel,
 		pid = PID(threads, thread);
 		info = &(evsel->per_thread[thread]);
 
-		LOG_DEBUG("Open event %s %u %lu for pid %d",
+		LOG_INFO("Open event %s %u %lu for pid %d",
 						evsel->name,
 						(unsigned int)evsel->attr.type,
 						(unsigned long)evsel->attr.config,
@@ -357,7 +361,8 @@ prof_evsel__rdpmc(struct prof_evsel *evsel, int thread)
 
 	index = evsel->per_thread[thread].hwc_index;
 
-	rdpmcl(index - 1, value);
+//	rdpmcl(index - 1, value);
+	rdpmcl(index, value);
 
 	return value;
 }

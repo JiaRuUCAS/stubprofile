@@ -8,27 +8,45 @@
 struct prof_info {
 	/* List of events */
 	struct prof_evlist *evlist;
+	/* Min index of traced function */
+	unsigned min_index;
 	/* Max index of traced function */
 	unsigned max_index;
+	/* Sample frequency */
+	unsigned sample_freq;
 	/* log file */
 	FILE *flog;
 	/* list of per-thread data.
 	 * It's used for safely termination.
 	 */
-	struct list_head thread_data;
+//	struct list_head thread_data;
 };
 
 enum {
 	PROF_STATE_UNINIT = 0,
-	PROF_STATE_INIT,
-	PROF_STATE_STOP,
 	PROF_STATE_RUNNING,
+	PROF_STATE_STOP,
 	PROF_STATE_ERROR,
+};
+
+#define PROF_FUNC_STACK_MAX	14
+
+struct prof_func {
+	uint32_t depth;
+	uint32_t counter;
+	uint32_t stack[PROF_FUNC_STACK_MAX];
+};
+
+#define PROF_RECORD_MAX	(1 << 22)
+struct prof_record {
+	uint16_t func_idx;
+	uint8_t ev_idx;
+	uint64_t count;
 };
 
 // per-thread data
 struct prof_tinfo {
-	struct list_head node;
+//	struct list_head node;
 
 	int pid;
 	int tid;
@@ -37,7 +55,11 @@ struct prof_tinfo {
 	/* Per-function counters
 	 * Its length is (max_index + 1)
 	 */
-	uint64_t *func_counters;
+	struct prof_func *func_counters;
+
+	uint32_t nb_record;
+	struct prof_record records[4096];
+//	struct prof_record *records;
 };
 
 enum {
@@ -60,8 +82,13 @@ void prof_log(uint8_t level, const char *format, ...);
 #define LOG_DEBUG(format, ...)
 #endif
 
-void *prof_init(char *evlist_str, char *logfile, unsigned max_id);
+void *prof_init(char *evlist_str, char *logfile,
+				unsigned min_id, unsigned max_id, unsigned freq);
 
 void prof_exit(void);
+void prof_thread_exit(void);
+
+void prof_count_pre(unsigned int func_index);
+void prof_count_post(unsigned int func_index);
 
 #endif	// __PROFILE_H__

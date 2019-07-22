@@ -33,10 +33,11 @@ static void initSkipList(void)
 }
 
 FuncMap::FuncMap(std::string name, std::string path) :
-		elf_path(path),
-		elf_name(name),
 		obj(NULL)
 {
+	elf_path = path;
+	elf_name = name;
+
 	if (skiplist.size() == 0)
 		initSkipList();
 }
@@ -249,7 +250,6 @@ bool FuncMap::loadFromELF(void)
 bool FuncMap::load(bool force_update)
 {
 	uint8_t state;
-	int ret = 0;
 
 	if (force_update) {
 		LOG_INFO("Force updating. Load function map from ELF file.");

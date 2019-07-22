@@ -327,6 +327,7 @@ prof_evsel__parse(const char *str, struct perf_event_attr *attr)
 	return name;
 }
 
+#if 0
 uint64_t
 prof_evsel__read(struct prof_evsel *evsel, int thread)
 {
@@ -349,6 +350,7 @@ prof_evsel__read(struct prof_evsel *evsel, int thread)
 
 	return data;
 }
+#endif
 
 uint64_t
 prof_evsel__rdpmc(struct prof_evsel *evsel, int thread)

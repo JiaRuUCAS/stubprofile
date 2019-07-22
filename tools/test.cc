@@ -44,7 +44,6 @@ static struct testcmd cmds[TEST_MODE_NUM] = {
 // global BPatch instance
 BPatch bpatch;
 
-
 static void usage(void)
 {
 	LOG_INFO("Usage:");
@@ -85,7 +84,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-
 	if (!test->parseArgs(argc, argv)) {
 		LOG_ERROR("Failed to parse arguments");
 		ret = 1;
@@ -107,5 +105,6 @@ int main(int argc, char **argv)
 
 delete_test:
 	delete test;
+
 	return ret;
 }

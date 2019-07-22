@@ -60,6 +60,6 @@ void prof_evsel__close(struct prof_evsel *evsel);
 char *prof_evsel__parse(const char *str,
 				struct perf_event_attr *attr);
 
-uint64_t prof_evsel__read(struct prof_evsel *evsel, int thread);
+//uint64_t prof_evsel__read(struct prof_evsel *evsel, int thread);
 uint64_t prof_evsel__rdpmc(struct prof_evsel *evsel, int thread);
 #endif /* _PROFILE_EVSEL_H_ */

@@ -57,25 +57,6 @@ static inline void *zalloc(size_t size)
 	return ptr;
 }
 
-static inline ssize_t readn(int fd, void *buf, size_t n)
-{
-	size_t left = n;
-
-	while (left) {
-		ssize_t ret = 0;
-
-		ret = read(fd, buf, left);
-		if (ret < 0 && errno == EINTR)
-			continue;
-		if (ret <= 0)
-			return ret;
-
-		left -= ret;
-		buf += ret;
-	}
-	return n;
-}
-
 static inline unsigned int __roundup_2(unsigned int num)
 {
 	num--;
@@ -95,7 +76,7 @@ static inline unsigned int __roundup_2(unsigned int num)
 #define offsetof(type, member) ((size_t) & ((type*)0)->member)
 
 #define container_of(ptr, type, member) ({ \
-			const typeof(((type *)0)->member) *__mptr = (ptr); \
+			typeof(((type *)0)->member) *__mptr = (ptr); \
 			(type*)((char*)__mptr - offsetof(type,member)); })
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))

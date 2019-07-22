@@ -12,7 +12,7 @@ struct array {
 struct array *array__new(uint32_t elem_num, uint32_t elem_size);
 void array__delete(struct array *arr);
 
-static inline void *array__entry(struct array *arr, int idx)
+static inline void *array__entry(struct array *arr, unsigned idx)
 {
 	if (idx >= arr->elem_num)
 		return NULL;

@@ -7,17 +7,15 @@
 
 using namespace std;
 
-FuncMapTest::FuncMapTest(void) :
-		elf_path(""), funcmap(NULL), force_update(false)
+FuncMapTest::FuncMapTest(void)
 {
+	elf_path = "";
+	funcmap = NULL;
+	force_update = false;
 }
 
 FuncMapTest::~FuncMapTest(void)
 {
-	if (funcmap) {
-		delete funcmap;
-		funcmap = NULL;
-	}
 }
 
 Test *FuncMapTest::construct(void)
@@ -100,4 +98,8 @@ bool FuncMapTest::process(void)
 
 void FuncMapTest::destroy(void)
 {
+	if (funcmap) {
+		delete funcmap;
+		funcmap = NULL;
+	}
 }

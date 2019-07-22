@@ -27,6 +27,10 @@ TracedFunc::TracedFunc(BPatch_function *f, unsigned int i) :
 {
 }
 
+TracerTest::~TracerTest(void)
+{
+}
+
 Test *TracerTest::construct(void)
 {
 	return new TracerTest();
@@ -44,10 +48,6 @@ TracerTest::TracerTest(int pid, const char *pattern) :
 		func_pattern = TRACER_PATTERN_ALL;
 	else
 		func_pattern = pattern;
-}
-
-TracerTest::~TracerTest(void)
-{
 }
 
 bool TracerTest::init(void)
@@ -159,8 +159,6 @@ bool TracerTest::callInit(BPatch_object *lib)
 
 bool TracerTest::insertCount(BPatch_object *lib)
 {
-	unsigned int fun_id = 0;
-
 	LOG_INFO("Load counting functions");
 	pre_cnt = findFunction(lib, "prof_count_pre");
 	post_cnt = findFunction(lib, "prof_count_post");

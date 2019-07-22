@@ -13,6 +13,8 @@ enum {
 class Test {
 
 	public:
+		virtual ~Test(void) = default;
+
 		virtual void usage(void) = 0;
 
 		virtual bool parseArgs(int argc, char **argv) = 0;

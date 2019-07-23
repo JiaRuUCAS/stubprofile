@@ -14,6 +14,7 @@ set(DYNT_BIN_PATH ${DYNINST_TINY_BUILD_PATH}/bin)
 
 include_directories(
 		${DYNINST_TINY_BUILD_PATH}/include
+		${DYNINST_TINY_PATH}/dyninst/include
 		${DYNINST_TINY_PATH})
 
 add_subdirectory(common)

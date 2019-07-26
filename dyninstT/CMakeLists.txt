@@ -18,3 +18,5 @@ include_directories(
 		${DYNINST_TINY_PATH})
 
 add_subdirectory(common)
+
+add_subdirectory(symtab)

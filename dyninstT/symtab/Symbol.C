@@ -32,6 +32,7 @@
 #include "symutil.h"
 #include "Symbol.h"
 #include "annotations.h"
+#include "Region.h"
 
 #include <string>
 #include <iostream>
@@ -91,7 +92,7 @@ Symbol::Symbol () :
 	offset_(0),
 	ptr_offset_(0),
 	localTOC_(0),
-//	region_(NULL),
+	region_(NULL),
 	referring_(NULL),
 	size_(0),
 	isDynamic_(false),
@@ -112,13 +113,13 @@ Symbol::Symbol(const std::string& name,
 				SymbolVisibility v,
 				Offset o,
 //				Module *module,
-//				Region *r,
+				Region *r,
 				unsigned s,
 				bool d,
 				bool a,
 				int index,
 				int strindex,
-    			bool cs):
+				bool cs):
 //	module_(module),
 	type_(t),
 	internal_type_(0),
@@ -127,7 +128,7 @@ Symbol::Symbol(const std::string& name,
 	offset_(o),
 	ptr_offset_(0),
 	localTOC_(0),
-//	region_(r),
+	region_(r),
 	referring_(NULL),
 	size_(s),
 	isDynamic_(d),
@@ -161,7 +162,7 @@ Symbol *Symbol::magicEmitElfSymbol() {
 					SV_DEFAULT,	// symbol visibility
 					0,			// offset_
 //					NULL,		// module
-//					NULL,		// region
+					NULL,		// region
 					0,			// size_
 					false,		// isDynamic_
 					false);		// isAbsolute_
@@ -169,14 +170,14 @@ Symbol *Symbol::magicEmitElfSymbol() {
 
 bool Symbol::operator==(const Symbol& s) const
 {
-//	//  compare sections by offset, not pointer
-//	if (!region_ && s.region_) return false;
-//	if (region_ && !s.region_) return false;
-//	if (region_) {
-//		if (region_->getDiskOffset() != s.region_->getDiskOffset())
-//			return false;
-//	}
-//
+	//  compare sections by offset, not pointer
+	if (!region_ && s.region_) return false;
+	if (region_ && !s.region_) return false;
+	if (region_) {
+		if (region_->getDiskOffset() != s.region_->getDiskOffset())
+			return false;
+	}
+
 //	// compare modules by name, not pointer
 //	if (!module_ && s.module_) return false;
 //	if (module_ && !s.module_) return false;
@@ -186,10 +187,10 @@ bool Symbol::operator==(const Symbol& s) const
 //			return false;
 //	}
 
-	return ((type_    == s.type_)
+	return ((type_	== s.type_)
 			&& (linkage_ == s.linkage_)
-			&& (offset_    == s.offset_)
-			&& (size_    == s.size_)
+			&& (offset_	== s.offset_)
+			&& (size_	== s.size_)
 			&& (isDynamic_ == s.isDynamic_)
 			&& (isAbsolute_ == s.isAbsolute_)
 			&& (isDebug_ == s.isDebug_)
@@ -222,7 +223,7 @@ std::ostream& Dyninst::SymtabAPI::operator<<(ostream &os, const Symbol &s)
 
 SYMTAB_EXPORT string Symbol::getMangledName() const 
 {
-    return mangledName_;
+	return mangledName_;
 }
 
 SYMTAB_EXPORT string Symbol::getPrettyName() const 
@@ -312,6 +313,47 @@ bool Symbol::setLocalTOC(Offset toc)
 	localTOC_ = toc;
 	return true;
 }
+
+//SYMTAB_EXPORT bool Symbol::setModule(Module *mod) 
+//{
+//	assert(mod);
+//	module_ = mod; 
+//	return true;
+//}
+//
+//SYMTAB_EXPORT bool Symbol::isFunction() const
+//{
+//	return (getFunction() != NULL);
+//}
+//
+//SYMTAB_EXPORT bool Symbol::setFunction(Function *func)
+//{
+//	aggregate_ = func;
+//	return true;
+//}
+//
+//SYMTAB_EXPORT Function * Symbol::getFunction() const
+//{
+//	if (aggregate_ == NULL) 
+//		return NULL;
+//	return dynamic_cast<Function *>(aggregate_);
+//}
+//
+//SYMTAB_EXPORT bool Symbol::isVariable() const 
+//{
+//	return (getVariable() != NULL);
+//}
+//
+//SYMTAB_EXPORT bool Symbol::setVariable(Variable *var) 
+//{
+//	aggregate_ = var;
+//	return true;
+//}
+//
+//SYMTAB_EXPORT Variable * Symbol::getVariable() const
+//{
+//	return dynamic_cast<Variable *>(aggregate_);
+//}
 
 SYMTAB_EXPORT bool Symbol::setSize(unsigned ns)
 {

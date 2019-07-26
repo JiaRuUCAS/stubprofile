@@ -46,10 +46,6 @@
 #include "common/Serialization.h"
 #include <boost/shared_ptr.hpp>
 
-#ifndef CASE_RETURN_STR
-#define CASE_RETURN_STR(x) case x: return #x
-#endif
-
 using namespace std;
 
 namespace Dyninst{
@@ -58,7 +54,7 @@ namespace SymtabAPI{
 //class Module;
 //class typeCommon;
 //class localVarCollection;
-//class Region;
+class Region;
 //class Aggregate;
 //class Function;
 //class Variable;
@@ -78,7 +74,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 //	friend class AObject;
 //	friend class Object;
 //	friend class Aggregate;
-//	friend class relocationEntry;
+	friend class relocationEntry;
 //
 //	friend std::string parseStabString(Module *, int linenum, char *, int,
 //					typeCommon *);
@@ -178,7 +174,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 					SymbolVisibility v,
 					Offset o,
 //					Module *module = NULL, 
-//					Region *r = NULL, 
+					Region *r = NULL, 
 					unsigned s = 0,
 					bool d = false,
 					bool a = false,
@@ -205,7 +201,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	Offset getPtrOffset() const { return ptr_offset_; }
 	Offset getLocalTOC() const { return localTOC_; }
 	unsigned getSize() const { return size_; }
-//   Region *getRegion() const { return region_; }
+	Region *getRegion() const { return region_; }
 
 	bool isInDynSymtab() const { return (type_ != ST_DELETED) && isDynamic_ && !isDebug_; }
 	bool isInSymtab() const { return (type_ != ST_DELETED) && !isDynamic_ && !isDebug_; }
@@ -235,7 +231,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool setPtrOffset (Offset newOffset);
 	bool setLocalTOC (Offset localTOC);
 	bool setSize(unsigned ns);
-//	bool setRegion(Region *r);
+	bool setRegion(Region *r);
 //   bool setModule(Module *mod);
 
 	bool setMangledName(std::string name);
@@ -246,7 +242,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool  setAbsolute(bool a) { isAbsolute_ = a; return true; }
 	bool  setDebug(bool dbg) { isDebug_ = dbg; return true; }
 	bool  setCommonStorage(bool cs) { isCommonStorage_ = cs; return true; }
-//
+
 	bool  setVersionFileName(std::string &fileName);
 	bool  setVersions(std::vector<std::string> &vers);
 	bool  setVersionNum(unsigned verNum);
@@ -279,7 +275,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	Offset				offset_;
 	Offset				ptr_offset_;  // Function descriptor offset.  Not available on all platforms.
 	Offset				localTOC_;
-//	Region*				region_;
+	Region*				region_;
 	Symbol*				referring_;
 	unsigned			size_;  // size of this symbol. This is NOT available on all platforms.
 
@@ -305,7 +301,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 
 };
 
-	std::ostream& operator<< (std::ostream &os, const Symbol &s);
+std::ostream& operator<< (std::ostream &os, const Symbol &s);
 
 //class SYMTAB_EXPORT LookupInterface 
 //{

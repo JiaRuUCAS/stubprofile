@@ -41,6 +41,10 @@
 
 #define SYMTAB_UNUSED	__attribute__((unused))
 
+#ifndef CASE_RETURN_STR
+#define CASE_RETURN_STR(x) case x: return #x
+#endif
+
 namespace Dyninst{
 namespace SymtabAPI{
 

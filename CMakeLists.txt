@@ -27,7 +27,6 @@ set(DYNINST_TINY_BUILD_PATH ${CMAKE_INSTALL_PREFIX}/dyninstT)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" "${PROJECT_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 include(${PROJECT_SOURCE_DIR}/cmake/shared.cmake)
 include(ElfUtils)
-include(ThreadingBuildingBlocks)
 
 add_subdirectory(dyninstT)
 

@@ -31,7 +31,7 @@
 #include "Region.h"
 #include "relocation.h"
 #include "Symbol.h"
-//#include "Symtab.h"
+#include "Symtab.h"
 #include "common/serialize.h"
 #include <iostream>
 
@@ -55,8 +55,8 @@ Region *Region::createRegion( Offset diskOff, perm_t perms, RegionType regType,
 Region::Region(): regNum_(0), diskOff_(0), diskSize_(0), memOff_(0),
 	memSize_(0), fileOff_(0), rawDataPtr_(NULL), permissions_(RP_R),
 	rType_(RT_INVALID), isDirty_(false), buffer_(NULL), isLoadable_(false),
-	isTLS_(false), memAlign_(0)
-//	symtab_(NULL)
+	isTLS_(false), memAlign_(0),
+	symtab_(NULL)
 {
 }
 
@@ -71,8 +71,8 @@ Region::Region(unsigned regnum, std::string name, Offset diskOff,
 	rawDataPtr_(rawDataPtr), permissions_(perms),
 	rType_(regType), isDirty_(false), buffer_(NULL),
 	isLoadable_(isLoadable), isTLS_(isThreadLocal),
-	memAlign_(memAlignment)
-//	symtab_(NULL)
+	memAlign_(memAlignment),
+	symtab_(NULL)
 {
 	if (memOff)
 		isLoadable_ = true;
@@ -87,8 +87,8 @@ Region::Region(const Region &reg) :
 	memSize_(reg.memSize_), fileOff_(reg.fileOff_), rawDataPtr_(reg.rawDataPtr_),
 	permissions_(reg.permissions_), rType_(reg.rType_), isDirty_(reg.isDirty_),
 	rels_(reg.rels_), buffer_(reg.buffer_), isLoadable_(reg.isLoadable_),
-	isTLS_(reg.isTLS_), memAlign_(reg.memAlign_)
-//	symtab_(reg.symtab_)
+	isTLS_(reg.isTLS_), memAlign_(reg.memAlign_),
+	symtab_(reg.symtab_)
 {
 }
 

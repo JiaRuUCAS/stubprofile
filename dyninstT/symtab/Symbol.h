@@ -58,9 +58,9 @@ class Region;
 //class Aggregate;
 //class Function;
 //class Variable;
-//class Type;
-//class typeCollection;
-//class Symtab;
+class Type;
+class typeCollection;
+class Symtab;
 
 /************************************************************************
  * class Symbol
@@ -70,7 +70,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
                public AnnotatableSparse 
 {
 //	friend class typeCommon;
-//	friend class Symtab;
+	friend class Symtab;
 //	friend class AObject;
 //	friend class Object;
 //	friend class Aggregate;
@@ -194,7 +194,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	std::string getTypedName() const;
 
 //   Module *getModule() const { return module_; } 
-//   Symtab *getSymtab() const;
+//	Symtab *getSymtab() const;
 	SymbolType getType () const { return type_; }
 	SymbolLinkage getLinkage () const { return linkage_; }
 	Offset getOffset() const { return offset_; }
@@ -303,25 +303,25 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 
 std::ostream& operator<< (std::ostream &os, const Symbol &s);
 
-//class SYMTAB_EXPORT LookupInterface 
-//{
-//   public:
-//      LookupInterface();
-//      virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
-//            Symbol::SymbolType sType) = 0;
-//      virtual bool findSymbol(std::vector<Symbol *> &ret,
-//                                            const std::string& name,
-//                                            Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
-//                                            NameType nameType = anyName,
-//                                            bool isRegex = false,
-//                                            bool checkCase = false,
-//                                            bool includeUndefined = false) = 0;
-//      virtual bool findType(Type *&type, std::string name) = 0;
-//      virtual bool findVariableType(Type *&type, std::string name)= 0;
-//
-//      virtual ~LookupInterface();
-//};
-//
+class SYMTAB_EXPORT LookupInterface 
+{
+   public:
+      LookupInterface();
+      virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
+            Symbol::SymbolType sType) = 0;
+      virtual bool findSymbol(std::vector<Symbol *> &ret,
+                                            const std::string& name,
+                                            Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
+                                            NameType nameType = anyName,
+                                            bool isRegex = false,
+                                            bool checkCase = false,
+                                            bool includeUndefined = false) = 0;
+      virtual bool findType(Type *&type, std::string name) = 0;
+      virtual bool findVariableType(Type *&type, std::string name)= 0;
+
+      virtual ~LookupInterface();
+};
+
 }//namespace SymtabAPI
 }//namespace Dyninst
 

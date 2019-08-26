@@ -33,6 +33,7 @@
 #include "Symbol.h"
 #include "annotations.h"
 #include "Region.h"
+#include "Type.h"
 
 #include <string>
 #include <iostream>
@@ -248,9 +249,6 @@ SYMTAB_EXPORT string Symbol::getPrettyName() const
 		working_name = working_name.substr(0, atat);
 	}
   
-	// Assume not native (ie GNU) if we don't have an associated Symtab for some reason
-//	bool native_comp = getSymtab() ? getSymtab()->isNativeCompiler() : false;
-  
 	char *prettyName = NULL;
 	
 	prettyName = P_cplus_demangle(working_name.c_str(),
@@ -279,9 +277,6 @@ SYMTAB_EXPORT string Symbol::getTypedName() const
 	colon = working_name.find(":");
 	if(colon != string::npos) 
 		working_name = working_name.substr(0, colon);
-
-	// Assume not native (ie GNU) if we don't have an associated Symtab for some reason
-//	bool native_comp = getSymtab() ? getSymtab()->isNativeCompiler() : false;
 
 	char *prettyName = NULL;
 	

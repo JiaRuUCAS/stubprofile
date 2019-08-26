@@ -11,11 +11,12 @@ namespace SymtabAPI {
 
 class Symbol;
 class relocationEntry;
-// class Symtab;
+class Symtab;
 
 /* This class represents a contiguous range of code or data as encoded
  * in the object file. For ELF, Region represents a section. */
 class SYMTAB_EXPORT Region : public AnnotatableSparse {
+	friend class Symtab;
 
 	public:
 
@@ -138,7 +139,7 @@ class SYMTAB_EXPORT Region : public AnnotatableSparse {
 		Serializable * serialize_impl(SerializerBase *sb,
 						const char *tag = "Region") THROW_SPEC (SerializerError);
 
-//		Symtab *symtab() const { return symtab_; }
+		Symtab *symtab() const { return symtab_; }
 
 	protected:							
 		Region(unsigned regnum,
@@ -153,7 +154,7 @@ class SYMTAB_EXPORT Region : public AnnotatableSparse {
 						bool isLoadable = false,
 						bool isTLS = false,
 						unsigned long memAlign = sizeof(unsigned));
-//		void setSymtab(Symtab *sym) { symtab_ = sym; }
+		void setSymtab(Symtab *sym) { symtab_ = sym; }
 	private:
 		/* region number */
 		unsigned regNum_;
@@ -173,7 +174,7 @@ class SYMTAB_EXPORT Region : public AnnotatableSparse {
 		bool isLoadable_;
 		bool isTLS_;
 		unsigned long memAlign_;
-//		Symtab *symtab_;
+		Symtab *symtab_;
 };
 
 }	/* SymtabAPI */

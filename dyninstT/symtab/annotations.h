@@ -42,8 +42,8 @@
 //#include "Collections.h" // localVarCollection
 //#include "LineInformation.h"
 #include "Symbol.h"
-//#include "Region.h"
-//#include "Type.h"
+#include "Region.h"
+#include "Type.h"
 
 
 using namespace Dyninst;
@@ -55,8 +55,8 @@ using namespace std;
 extern AnnotationClass<std::vector<std::string> > SymbolVersionNamesAnno;
 extern AnnotationClass<std::string> SymbolFileNameAnno;
 //extern AnnotationClass<std::vector<Function *> > UserFuncsAnno;
-//extern AnnotationClass<std::vector<Region *> > UserRegionsAnno; 
-//extern AnnotationClass<std::vector<Type *> > UserTypesAnno;
+extern AnnotationClass<std::vector<Region *> > UserRegionsAnno; 
+extern AnnotationClass<std::vector<Type *> > UserTypesAnno;
 extern AnnotationClass<std::vector<Symbol *> > UserSymbolsAnno;
 //extern AnnotationClass<LineInformation> ModuleLineInfoAnno;
 //extern AnnotationClass<typeCollection> ModuleTypeInfoAnno;

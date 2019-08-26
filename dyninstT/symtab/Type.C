@@ -35,7 +35,7 @@
 #include "symutil.h"
 #include "Type.h"
 #include "Symtab.h"
-//#include "Module.h"
+#include "Module.h"
 //#include "Collections.h"
 //#include "Function.h"
 #include "common/serialize.h"
@@ -240,8 +240,8 @@ dataClass Type::getDataClass() const
 	 return type_;
 }
 
-//void Type::fixupUnknowns(Module *){
-//}
+void Type::fixupUnknowns(Module *){
+}
 
 typeEnum *Type::getEnumType(){
 	 return dynamic_cast<typeEnum *>(this);

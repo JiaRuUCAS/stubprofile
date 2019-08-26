@@ -39,7 +39,7 @@
 namespace Dyninst{
 namespace SymtabAPI{
 
-//class Module;
+class Module;
 class Symtab;
 class Symbol;
 class Type;
@@ -144,7 +144,7 @@ class SYMTAB_EXPORT Field : public Serializable, public FIELD_ANNOTATABLE_CLASS
 
 class SYMTAB_EXPORT Type : public Serializable, public  TYPE_ANNOTATABLE_CLASS 
 {
-	friend class typeCollection;
+//	friend class typeCollection;
 //	friend std::string parseStabString(Module *, int linenum, char *, int, 
 //						typeCommon *);
 	static Type* upgradePlaceholder(Type *placeholder, Type *new_type);
@@ -185,7 +185,7 @@ protected:
 public:
 	virtual bool operator==(const Type &) const;
 	virtual bool isCompatible(Type *oType);
-//	virtual void fixupUnknowns(Module *);
+	virtual void fixupUnknowns(Module *);
 
 	Type(std::string name, typeId_t ID, dataClass dataTyp = dataNullType);
 	Type(std::string name, dataClass dataTyp = dataNullType);

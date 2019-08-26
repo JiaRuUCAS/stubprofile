@@ -34,7 +34,11 @@ add_subdirectory(dyninstT)
 #		${DYNINST_PATH} ${DYNINST_BUILD_PATH})
 
 # set c flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -Wall -Werror")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -Werror")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Waddress -Warray-bounds -Wchar-subscripts -Wimplicit-int -Wimplicit-function-declaration -Wcomment")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wmain -Wmissing-braces -Wnonnull -Wpointer-sign -Wreturn-type -Wsign-compare")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsequence-point -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch -Wtrigraphs")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wuninitialized -Wunknown-pragmas -Wunused-function -Wunused-label -Wvolatile-register-var")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes")
 
 add_subdirectory(libfunccnt)

@@ -16,6 +16,7 @@
 #include "common/serialize.h"
 #include "common/pathName.h"
 #include "common/Serialization.h"
+#include "common/MappedFile.h"
 
 #include "Symtab.h"
 #include "relocation.h"
@@ -162,7 +163,7 @@ SYMTAB_EXPORT Symtab::Symtab() :
 	AnnotatableSparse(),
 	member_offset_(0),
 //	parentArchive_(NULL),
-//	mf(NULL), mfForDebugInfo(NULL),
+	mf(NULL), mfForDebugInfo(NULL),
 	imageOffset_(0), imageLen_(0),
 	dataOffset_(0), dataLen_(0),
 	is_a_out(false),
@@ -202,7 +203,7 @@ Symtab::Symtab(unsigned char *mem_image, size_t image_size,
 	AnnotatableSparse(),
 	member_offset_(0),
 //	parentArchive_(NULL),
-//	mf(NULL), mfForDebugInfo(NULL),
+	mf(NULL), mfForDebugInfo(NULL),
 	imageOffset_(0), imageLen_(0),
 	dataOffset_(0), dataLen_(0),
 	is_a_out(false),
@@ -236,16 +237,16 @@ Symtab::Symtab(unsigned char *mem_image, size_t image_size,
   
 //	create_printf("%s[%d]: created symtab for memory image at addr %u\n", 
 //				 FILE__, __LINE__, mem_image);
-//
-//	//  createMappedFile handles reference counting
-//	mf = MappedFile::createMappedFile(mem_image, image_size, name);
-//	if (!mf) {
+
+	//  createMappedFile handles reference counting
+	mf = MappedFile::createMappedFile(mem_image, image_size, name);
+	if (!mf) {
 //	  create_printf("%s[%d]: WARNING: creating symtab for memory image at " 
 //					"addr %u, createMappedFile() failed\n", FILE__, __LINE__, 
 //					mem_image);
-//	  err = true;
-//	  return;
-//	}
+	  err = true;
+	  return;
+	}
 //
 //	obj_private = new Object(mf, defensive_bin, 
 //							symtab_log_perror, true, this);
@@ -261,8 +262,7 @@ Symtab::Symtab(unsigned char *mem_image, size_t image_size,
 //	  err = true;
 //	}
 //
-//	member_name_ = mf->filename();
-//
+	member_name_ = mf->filename();
 	defaultNamespacePrefix = "";
 }
 
@@ -273,7 +273,7 @@ Symtab::Symtab(const Symtab& obj) :
 	member_name_(obj.member_name_),
 	member_offset_(obj.member_offset_),
 //	parentArchive_(NULL),
-//	mf(NULL), mfForDebugInfo(NULL),
+	mf(NULL), mfForDebugInfo(NULL),
 	imageOffset_(obj.imageOffset_), imageLen_(obj.imageLen_),
 	dataOffset_(obj.dataOffset_), dataLen_(obj.dataLen_),
 	is_a_out(obj.is_a_out),
@@ -328,6 +328,40 @@ Symtab::Symtab(const Symtab& obj) :
 	}
 
 	deps_ = obj.deps_;
+}
+
+SYMTAB_EXPORT Symtab::Symtab(MappedFile *mf_) :
+	AnnotatableSparse(),
+	member_offset_(0),
+//	parentArchive_(NULL),
+	mf(mf_), mfForDebugInfo(NULL),
+	imageOffset_(0), imageLen_(0),
+	dataOffset_(0), dataLen_(0),
+	is_a_out(false),
+	main_call_addr_(0),
+	nativeCompiler(false),
+	address_width_(sizeof(int)),
+	code_ptr_(NULL), data_ptr_(NULL),
+	entry_address_(0), base_address_(0), load_address_(0),
+//	object_type_(obj_Unknown), is_eel_(false),
+	no_of_sections(0),
+	newSectionInsertPoint(0),
+	no_of_symbols(0),
+//	sorted_everyFunction(false),
+	isTypeInfoValid_(false),
+//	nlines_(0), fdptr_(0), lines_(NULL),
+//	stabstr_(NULL), nstabs_(0), stabs_(NULL),
+//	stringpool_(NULL),
+	hasRel_(false), hasRela_(false), hasReldyn_(false),
+	hasReladyn_(false), hasRelplt_(false), hasRelaplt_(false),
+	isStaticBinary_(false), isDefensiveBinary_(false),
+//	func_lookup(NULL),
+//	mod_lookup_(NULL),
+//	obj_private(NULL),
+	_ref_cnt(1)
+{
+	 pfq_rwlock_init(symbols_rwlock);
+//	 init_debug_symtabAPI();
 }
 
 Symtab::~Symtab()
@@ -398,8 +432,8 @@ Symtab::~Symtab()
 //	// open method
 //	delete obj_private;
 //
-//	if (mf) MappedFile::closeMappedFile(mf);
-//
+	if (mf) MappedFile::closeMappedFile(mf);
+
 }
 
 bool Symtab::addType(Type *type)
@@ -436,4 +470,92 @@ bool Symtab::addUserType(Type *t)
 	user_types->push_back(t);
 
 	return true;
+}
+
+SYMTAB_EXPORT unsigned Symtab::getAddressWidth() const 
+{
+	return address_width_;
+}
+
+SYMTAB_EXPORT Offset Symtab::preferedBase() const 
+{
+	return preferedBase_;
+}
+
+SYMTAB_EXPORT Offset Symtab::imageOffset() const 
+{
+	return imageOffset_;
+}
+
+SYMTAB_EXPORT Offset Symtab::dataOffset() const 
+{ 
+	return dataOffset_;
+}
+
+SYMTAB_EXPORT Offset Symtab::dataLength() const 
+{
+	return dataLen_;
+} 
+
+SYMTAB_EXPORT Offset Symtab::imageLength() const 
+{
+	return imageLen_;
+}
+
+SYMTAB_EXPORT const char *Symtab::getInterpreterName() const 
+{
+	if (interpreter_name_.length())
+		return interpreter_name_.c_str();
+	return NULL;
+}
+ 
+SYMTAB_EXPORT Offset Symtab::getEntryOffset() const 
+{ 
+	return entry_address_;
+}
+
+SYMTAB_EXPORT Offset Symtab::getBaseOffset() const 
+{
+	return base_address_;
+}
+
+SYMTAB_EXPORT Offset Symtab::getLoadOffset() const 
+{ 
+	return load_address_;
+}
+
+SYMTAB_EXPORT string Symtab::getDefaultNamespacePrefix() const
+{
+	return defaultNamespacePrefix;
+}
+
+SYMTAB_EXPORT char *Symtab::mem_image() const 
+{
+	return (char *)mf->base_addr();
+}
+
+SYMTAB_EXPORT std::string Symtab::file() const 
+{
+	assert(mf);
+	return mf->pathname();
+}
+
+SYMTAB_EXPORT std::string Symtab::name() const 
+{
+	return mf->filename();
+}
+
+SYMTAB_EXPORT std::string Symtab::memberName() const 
+{
+	return member_name_;
+}
+
+SYMTAB_EXPORT unsigned Symtab::getNumberOfRegions() const 
+{
+	return no_of_sections; 
+}
+
+SYMTAB_EXPORT unsigned Symtab::getNumberOfSymbols() const 
+{
+	return no_of_symbols; 
 }

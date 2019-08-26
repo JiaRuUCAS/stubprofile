@@ -34,6 +34,7 @@
 #include "annotations.h"
 #include "Region.h"
 #include "Type.h"
+#include "Module.h"
 
 #include <string>
 #include <iostream>
@@ -85,7 +86,7 @@ const char *Symbol::symbolVisibility2Str(SymbolVisibility t)
 }
 
 Symbol::Symbol () :
-//	module_(NULL),
+	module_(NULL),
 	type_(ST_NOTYPE),
 	internal_type_(0),
 	linkage_(SL_UNKNOWN),
@@ -113,7 +114,7 @@ Symbol::Symbol(const std::string& name,
 				SymbolLinkage l,
 				SymbolVisibility v,
 				Offset o,
-//				Module *module,
+				Module *module,
 				Region *r,
 				unsigned s,
 				bool d,
@@ -121,7 +122,7 @@ Symbol::Symbol(const std::string& name,
 				int index,
 				int strindex,
 				bool cs):
-//	module_(module),
+	module_(module),
 	type_(t),
 	internal_type_(0),
 	linkage_(l),
@@ -162,7 +163,7 @@ Symbol *Symbol::magicEmitElfSymbol() {
 					SL_LOCAL,	// symbol linkage
 					SV_DEFAULT,	// symbol visibility
 					0,			// offset_
-//					NULL,		// module
+					NULL,		// module
 					NULL,		// region
 					0,			// size_
 					false,		// isDynamic_
@@ -179,14 +180,13 @@ bool Symbol::operator==(const Symbol& s) const
 			return false;
 	}
 
-//	// compare modules by name, not pointer
-//	if (!module_ && s.module_) return false;
-//	if (module_ && !s.module_) return false;
-//	if (module_)
-//	{
-//		if (module_->fullName() != s.module_->fullName())
-//			return false;
-//	}
+	// compare modules by name, not pointer
+	if (!module_ && s.module_) return false;
+	if (module_ && !s.module_) return false;
+	if (module_) {
+		if (module_->fullName() != s.module_->fullName())
+			return false;
+	}
 
 	return ((type_	== s.type_)
 			&& (linkage_ == s.linkage_)
@@ -205,7 +205,7 @@ std::ostream& Dyninst::SymtabAPI::operator<<(ostream &os, const Symbol &s)
 	return os << "{"
 			<< " mangled=" << s.getMangledName()
 			<< " pretty="  << s.getPrettyName()
-//			<< " module="  << s.module_
+			<< " module="  << s.module_
 			<< " type=" << s.symbolType2Str(s.type_)
 			<< " linkage=" << s.symbolLinkage2Str(s.linkage_)
 			<< " offset=0x" << hex << s.offset_ << dec
@@ -309,13 +309,13 @@ bool Symbol::setLocalTOC(Offset toc)
 	return true;
 }
 
-//SYMTAB_EXPORT bool Symbol::setModule(Module *mod) 
-//{
-//	assert(mod);
-//	module_ = mod; 
-//	return true;
-//}
-//
+SYMTAB_EXPORT bool Symbol::setModule(Module *mod) 
+{
+	assert(mod);
+	module_ = mod; 
+	return true;
+}
+
 //SYMTAB_EXPORT bool Symbol::isFunction() const
 //{
 //	return (getFunction() != NULL);
@@ -366,13 +366,12 @@ SYMTAB_EXPORT bool Symbol::setSymbolType(SymbolType sType)
 			(sType != ST_INDIRECT))
 		return false;
 
-//	SymbolType oldType = type_;	
+	SymbolType oldType = type_;	
 	type_ = sType;
 
+	// TODO FIX changeType
 //	if (module_ && module_->exec())
 //		module_->exec()->changeType(this, oldType);
-
-	// TODO: update aggregate with information
 
 	return true;
 }

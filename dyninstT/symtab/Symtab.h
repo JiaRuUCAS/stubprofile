@@ -32,6 +32,8 @@ using boost::multi_index::tag;
 using boost::multi_index::const_mem_fun;
 using boost::multi_index::member;
 
+class MappedFile;
+
 namespace Dyninst {
 	struct SymSegment;
 
@@ -59,6 +61,8 @@ class SYMTAB_EXPORT Symtab : public LookupInterface,
 
 		std::string member_name_;
 		Offset member_offset_;
+		MappedFile *mf;
+		MappedFile *mfForDebugInfo;
 
 		Offset preferedBase_;
 		Offset imageOffset_;
@@ -150,12 +154,48 @@ class SYMTAB_EXPORT Symtab : public LookupInterface,
 		} def_t;
 
 		Symtab();
+		Symtab(MappedFile *);
 		Symtab(const Symtab &obj);
 		Symtab(unsigned char *mem_image, size_t image_size,
 						const std::string &name,
 						bool defensive_binary, bool &err);
 		~Symtab();
 
+		/********** Data member access ****************/
+		std::string file() const;
+		std::string name() const;
+		std::string memberName() const;
+
+		char *mem_image() const;
+
+		Offset preferedBase() const;
+		Offset imageOffset() const;
+		Offset dataOffset() const;
+		Offset dataLength() const;
+		Offset imageLength() const;
+//		Offset getInitOffset();
+//		Offset getFiniOffset();
+
+		const char *getInterpreterName() const;
+
+		unsigned getAddressWidth() const;
+//		bool isBigEndianDataEncoding() const;
+//		bool getABIVersion(int &major, int &minor) const;
+
+		Offset getLoadOffset() const;
+		Offset getEntryOffset() const;
+		Offset getBaseOffset() const;
+//		Offset getTOCoffset(Function *func = NULL) const;
+//		Offset getTOCoffset(Offset off) const;
+//		Address getLoadAddress();
+//		bool isDefensiveBinary() const; 
+//		Offset fileToDiskOffset(Dyninst::Offset) const;
+//		Offset fileToMemOffset(Dyninst::Offset) const;
+
+		std::string getDefaultNamespacePrefix() const;
+
+		unsigned getNumberOfRegions() const;
+		unsigned getNumberOfSymbols() const;
 
 		/********* Type Information ********/
 		bool addType(Type *typ);
@@ -173,6 +213,8 @@ class SYMTAB_EXPORT Symtab : public LookupInterface,
 //		static boost::shared_ptr<typeCollection> setupStdTypes();
 
 		bool addUserType(Type *);
+		// change the type of a symbol after the fact
+//		bool changeType(Symbol *sym, Symbol::SymbolType oldType);
 };
 
 };

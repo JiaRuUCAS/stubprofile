@@ -1,6 +1,7 @@
 set(DYNT_SYMTAB_SRC
 		annotations.C
 		exception.C
+		Module.C
 		Region.C
 		relocation.C
 		Symbol.C

@@ -51,7 +51,7 @@ using namespace std;
 namespace Dyninst{
 namespace SymtabAPI{
 
-//class Module;
+class Module;
 //class typeCommon;
 //class localVarCollection;
 class Region;
@@ -173,7 +173,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 					SymbolLinkage l,
 					SymbolVisibility v,
 					Offset o,
-//					Module *module = NULL, 
+					Module *module = NULL, 
 					Region *r = NULL, 
 					unsigned s = 0,
 					bool d = false,
@@ -193,7 +193,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	std::string	getPrettyName() const;
 	std::string getTypedName() const;
 
-//   Module *getModule() const { return module_; } 
+	Module *getModule() const { return module_; } 
 //	Symtab *getSymtab() const;
 	SymbolType getType () const { return type_; }
 	SymbolLinkage getLinkage () const { return linkage_; }
@@ -232,7 +232,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool setLocalTOC (Offset localTOC);
 	bool setSize(unsigned ns);
 	bool setRegion(Region *r);
-//   bool setModule(Module *mod);
+	bool setModule(Module *mod);
 
 	bool setMangledName(std::string name);
 
@@ -267,7 +267,7 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 
 	private:
 
-//	Module*       module_;
+	Module*       module_;
 	SymbolType			type_;
 	int					internal_type_;
 	SymbolLinkage		linkage_;

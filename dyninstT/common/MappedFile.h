@@ -36,48 +36,47 @@
 #include "Types.h"
 
 class MappedFile {
-     static dyn_hash_map<std::string, MappedFile *> mapped_files;
+	static dyn_hash_map<std::string, MappedFile *> mapped_files;
 
-   public:
-      COMMON_EXPORT static MappedFile *createMappedFile(std::string fullpath_);
-      COMMON_EXPORT static MappedFile *createMappedFile(void *map_loc, unsigned long size_, const std::string &name);
-      COMMON_EXPORT static void closeMappedFile(MappedFile *&mf);
+	public:
+		COMMON_EXPORT static MappedFile *createMappedFile(std::string fullpath_);
+		COMMON_EXPORT static MappedFile *createMappedFile(
+						void *map_loc, unsigned long size_, const std::string &name);
+		COMMON_EXPORT static void closeMappedFile(MappedFile *&mf);
 
-      COMMON_EXPORT std::string pathname();
-      COMMON_EXPORT std::string filename();
-      COMMON_EXPORT void *base_addr() {return map_addr;}
-      COMMON_EXPORT int getFD() {return fd;}
-      COMMON_EXPORT unsigned long size() {return file_size;}
-      COMMON_EXPORT MappedFile *clone() { refCount++; return this; }
+		COMMON_EXPORT std::string pathname();
+		COMMON_EXPORT std::string filename();
+		COMMON_EXPORT void *base_addr() {return map_addr;}
+		COMMON_EXPORT int getFD() {return fd;}
+		COMMON_EXPORT unsigned long size() {return file_size;}
+		COMMON_EXPORT MappedFile *clone() { refCount++; return this; }
 
-      COMMON_EXPORT void setSharing(bool s);
-      COMMON_EXPORT bool canBeShared();
+		COMMON_EXPORT void setSharing(bool s);
+		COMMON_EXPORT bool canBeShared();
 
-   private:
+	private:
+		MappedFile(std::string fullpath_, bool &ok);
+		MappedFile(void *loc, unsigned long size_, const std::string & name, bool &ok);
+		~MappedFile();
+		bool clean_up();
 
-      MappedFile(std::string fullpath_, bool &ok);
-      MappedFile(void *loc, unsigned long size_, const std::string & name, bool &ok);
-      ~MappedFile();
-      bool clean_up();
+		bool check_path(std::string &);
+		bool open_file();
+		bool open_file(void *, unsigned long size_ = 0);
+		bool map_file();
+		bool unmap_file();
+		bool close_file();
 
-      bool check_path(std::string &);
-      bool open_file();
-      bool open_file(void *, unsigned long size_ = 0);
-      bool map_file();
-      bool unmap_file();
-      bool close_file();
+		std::string fullpath;
+		void *map_addr;
+		int fd;
 
-	  std::string fullpath;
-      void *map_addr;
-
-      int fd;
-
-      bool remote_file;
-      bool did_mmap;
-      bool did_open;
-      bool can_share;
-      unsigned long file_size;
-      int refCount;
+		bool remote_file;
+		bool did_mmap;
+		bool did_open;
+		bool can_share;
+		unsigned long file_size;
+		int refCount;
 };
 
 #endif

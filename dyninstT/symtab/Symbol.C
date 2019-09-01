@@ -35,6 +35,8 @@
 #include "Region.h"
 #include "Type.h"
 #include "Module.h"
+#include "Object.h"
+#include "Function.h"
 
 #include <string>
 #include <iostream>
@@ -43,6 +45,149 @@ using namespace Dyninst;
 using namespace SymtabAPI;
 
 std::string Symbol::emptyString("");
+
+bool ____sym_hdr_printed = false;
+void Dyninst::SymtabAPI::print_symbols(std::vector< Symbol *>& allsymbols) {
+	FILE* fd = stdout;
+	Symbol *sym;
+	std::string modname;
+
+	if (!____sym_hdr_printed) {
+		fprintf(fd, "%-20s  %-15s  %-10s  %5s  SEC  TYP  LN  VIS  INFO\n", 
+				"SYMBOL", "MODULE", "ADDR", "SIZE");
+		____sym_hdr_printed = true;
+	}
+
+	for (unsigned i=0; i<allsymbols.size(); i++) {
+		sym = allsymbols[i];
+		modname = (sym->getModule() ? sym->getModule()->fileName() : "");
+
+		fprintf(fd, "%-20s  %-15s  0x%08x  %5u  %3u", 
+				sym->getMangledName().substr(0,20).c_str(), 
+				"", (unsigned)sym->getOffset(),
+				(unsigned)sym->getSize(),
+				sym->getRegion() ? sym->getRegion()->getRegionNumber() : 0);
+
+		switch (sym->getType()) {
+			case Symbol::ST_FUNCTION: fprintf(fd, "  FUN"); break;
+			case Symbol::ST_TLS:	  fprintf(fd, "  TLS"); break;
+			case Symbol::ST_OBJECT:   fprintf(fd, "  OBJ"); break;
+			case Symbol::ST_MODULE:   fprintf(fd, "  MOD"); break;
+			case Symbol::ST_SECTION:  fprintf(fd, "  SEC"); break;
+			case Symbol::ST_DELETED:  fprintf(fd, "  DEL"); break;
+			case Symbol::ST_NOTYPE:   fprintf(fd, "   - "); break;
+			default:
+			case Symbol::ST_UNKNOWN:  fprintf(fd, "  ???"); break;				 
+		}
+
+		switch (sym->getLinkage()) {
+			case Symbol::SL_UNKNOWN: fprintf(fd, "  ??"); break;
+			case Symbol::SL_GLOBAL:  fprintf(fd, "  GL"); break;
+			case Symbol::SL_LOCAL:   fprintf(fd, "  LO"); break;
+			case Symbol::SL_WEAK:	 fprintf(fd, "  WK"); break;
+			case Symbol::SL_UNIQUE:  fprintf(fd, "  UQ"); break;
+		}
+
+		switch (sym->getVisibility()) {
+			case Symbol::SV_UNKNOWN:   fprintf(fd, "  ???"); break;
+			case Symbol::SV_DEFAULT:   fprintf(fd, "   - "); break;
+			case Symbol::SV_INTERNAL:  fprintf(fd, "  INT"); break;
+			case Symbol::SV_HIDDEN:	fprintf(fd, "  HID"); break;
+			case Symbol::SV_PROTECTED: fprintf(fd, "  PRO"); break;
+		}
+
+		fprintf(fd, " ");
+		if (sym->isInSymtab())
+			fprintf(fd, " STA");
+		if (sym->isInDynSymtab())
+			fprintf(fd, " DYN");
+		if (sym->isAbsolute())
+			fprintf(fd, " ABS");
+		if (sym->isDebug())
+			fprintf(fd, " DBG");
+
+		std::string fileName;
+		std::vector<std::string> *vers;
+
+		if (sym->getVersionFileName(fileName))
+			fprintf(fd, "  [%s]", fileName.c_str());
+		if (sym->getVersions(vers)) {
+			fprintf(fd, " {");
+			for (unsigned j=0; j < vers->size(); j++) {
+				if (j > 0)
+					fprintf(fd, ", ");
+				fprintf(fd, "%s", (*vers)[j].c_str());
+			}
+			fprintf(fd, "}");
+		}
+		fprintf(fd,"\n");
+	}
+}
+
+void Dyninst::SymtabAPI::print_symbol_map(
+				dyn_hash_map<std::string, std::vector<Symbol *>> *symbols)
+{
+	dyn_hash_map<std::string, std::vector<Symbol *>>::iterator siter =
+			symbols->begin();
+	int total_syms = 0;
+
+	while (siter != symbols->end()) {
+		print_symbols(siter->second);
+		total_syms += siter->second.size();
+		siter++;
+	}
+	printf("%d total symbol(s)\n", total_syms);
+}
+
+bool Dyninst::SymtabAPI::symbol_compare(const Symbol *s1, const Symbol *s2) 
+{
+	// select the symbol with the lowest address
+	Offset s1_addr = s1->getOffset();
+	Offset s2_addr = s2->getOffset();
+
+	if (s1_addr > s2_addr)
+		return false;
+	if (s1_addr < s2_addr)
+		return true;
+
+	// symbols are co-located at the same address
+	// select the symbol which is not a function
+	if ((s1->getType() != Symbol::ST_FUNCTION)
+					&& (s2->getType() == Symbol::ST_FUNCTION))
+		return true;
+	if ((s2->getType() != Symbol::ST_FUNCTION)
+					&& (s1->getType() == Symbol::ST_FUNCTION))
+		return false;
+	
+	// symbols are both functions
+	// select the symbol which has GLOBAL linkage
+	if ((s1->getLinkage() == Symbol::SL_GLOBAL)
+					&& (s2->getLinkage() != Symbol::SL_GLOBAL))
+		return true;
+	if ((s2->getLinkage() == Symbol::SL_GLOBAL)
+					&& (s1->getLinkage() != Symbol::SL_GLOBAL))
+		return false;
+	
+	// neither function is GLOBAL
+	// select the symbol which has LOCAL linkage
+	if ((s1->getLinkage() == Symbol::SL_LOCAL)
+					&& (s2->getLinkage() != Symbol::SL_LOCAL))
+		return true;
+	if ((s2->getLinkage() == Symbol::SL_LOCAL)
+					&& (s1->getLinkage() != Symbol::SL_LOCAL))
+		return false;
+	
+	// both functions are WEAK
+	
+	// Apparently sort requires a strict weak ordering
+	// and fails for equality. our compare
+	// function behaviour should be as follows
+	// f(x,y) => !f(y,x)
+	// f(x,y),f(y,z) => f(x,z)
+	// f(x,x) = false. 
+	// So return which ever is first in the array. May be that would help.
+	return (s1 < s2);
+}
 
 const char *Symbol::symbolType2Str(SymbolType t)
 {
@@ -85,6 +230,10 @@ const char *Symbol::symbolVisibility2Str(SymbolVisibility t)
 	return "invalid symbol visibility";
 }
 
+Symtab *Symbol::getSymtab() const {
+	return module_ ? module_->exec() : NULL;
+}
+
 Symbol::Symbol () :
 	module_(NULL),
 	type_(ST_NOTYPE),
@@ -100,7 +249,7 @@ Symbol::Symbol () :
 	isDynamic_(false),
 	isAbsolute_(false),
 	isDebug_(false),
-//	aggregate_(NULL),
+	aggregate_(NULL),
 	mangledName_(emptyString),
 	index_(-1),
 	strindex_(-1),
@@ -136,7 +285,7 @@ Symbol::Symbol(const std::string& name,
 	isDynamic_(d),
 	isAbsolute_(a),
 	isDebug_(false),
-//	aggregate_(NULL),
+	aggregate_(NULL),
 	mangledName_(name),
 	index_(index),
 	strindex_(strindex),
@@ -215,10 +364,10 @@ std::ostream& Dyninst::SymtabAPI::operator<<(ostream &os, const Symbol &s)
 			<< " isAbs=" << s.isAbsolute_
 			<< " isDbg=" << s.isDebug_
 			<< " isCommon=" << s.isCommonStorage_
-//			<< (s.isFunction() ? " [FUNC]" : "")
-//			<< (s.isVariable() ? " [VAR]" : "")
-//			<< (s.isInSymtab() ? "[STA]" : "")
-//			<< (s.isInDynSymtab() ? "[DYN]" : "")
+			<< (s.isFunction() ? " [FUNC]" : "")
+			<< (s.isVariable() ? " [VAR]" : "")
+			<< (s.isInSymtab() ? "[STA]" : "")
+			<< (s.isInDynSymtab() ? "[DYN]" : "")
 			<< " }";
 }
 
@@ -268,7 +417,7 @@ SYMTAB_EXPORT string Symbol::getTypedName() const
 
 	// Accoring to Itanium C++ ABI, all mangled names start with _Z
 	if (mangledName_.size() < 2 || mangledName_[0] != '_'
-				   || mangledName_[1] != 'Z')
+					|| mangledName_[1] != 'Z')
 		return working_name;
 
 	//Remove extra stabs information
@@ -316,39 +465,39 @@ SYMTAB_EXPORT bool Symbol::setModule(Module *mod)
 	return true;
 }
 
-//SYMTAB_EXPORT bool Symbol::isFunction() const
-//{
-//	return (getFunction() != NULL);
-//}
-//
-//SYMTAB_EXPORT bool Symbol::setFunction(Function *func)
-//{
-//	aggregate_ = func;
-//	return true;
-//}
-//
-//SYMTAB_EXPORT Function * Symbol::getFunction() const
-//{
-//	if (aggregate_ == NULL) 
-//		return NULL;
-//	return dynamic_cast<Function *>(aggregate_);
-//}
-//
-//SYMTAB_EXPORT bool Symbol::isVariable() const 
-//{
-//	return (getVariable() != NULL);
-//}
-//
-//SYMTAB_EXPORT bool Symbol::setVariable(Variable *var) 
-//{
-//	aggregate_ = var;
-//	return true;
-//}
-//
-//SYMTAB_EXPORT Variable * Symbol::getVariable() const
-//{
-//	return dynamic_cast<Variable *>(aggregate_);
-//}
+SYMTAB_EXPORT bool Symbol::isFunction() const
+{
+	return (getFunction() != NULL);
+}
+
+SYMTAB_EXPORT bool Symbol::setFunction(Function *func)
+{
+	aggregate_ = func;
+	return true;
+}
+
+SYMTAB_EXPORT Function * Symbol::getFunction() const
+{
+	if (aggregate_ == NULL) 
+		return NULL;
+	return dynamic_cast<Function *>(aggregate_);
+}
+
+SYMTAB_EXPORT bool Symbol::isVariable() const 
+{
+	return (getVariable() != NULL);
+}
+
+SYMTAB_EXPORT bool Symbol::setVariable(Variable *var) 
+{
+	aggregate_ = var;
+	return true;
+}
+
+SYMTAB_EXPORT Variable * Symbol::getVariable() const
+{
+	return dynamic_cast<Variable *>(aggregate_);
+}
 
 SYMTAB_EXPORT bool Symbol::setSize(unsigned ns)
 {
@@ -369,7 +518,6 @@ SYMTAB_EXPORT bool Symbol::setSymbolType(SymbolType sType)
 	SymbolType oldType = type_;	
 	type_ = sType;
 
-	// TODO FIX changeType
 //	if (module_ && module_->exec())
 //		module_->exec()->changeType(this, oldType);
 
@@ -451,3 +599,59 @@ Symbol* Symbol::getReferringSymbol() {
 	return referring_;
 }
 
+SymbolIter::SymbolIter(Object & obj)
+		: symbols(obj.getAllSymbols()), currentPositionInVector(0) 
+{
+	symbolIterator = obj.getAllSymbols()->begin();
+}
+
+SymbolIter::SymbolIter(const SymbolIter & src) :
+		symbols(src.symbols),
+		currentPositionInVector(0),
+		symbolIterator(src.symbolIterator) 
+{
+}
+
+SymbolIter::~SymbolIter()
+{
+}
+
+void SymbolIter::reset() 
+{
+	currentPositionInVector = 0;
+	symbolIterator = symbols->begin();
+}
+
+SymbolIter::operator bool() const
+{
+	return (symbolIterator!=symbols->end());
+}
+
+void SymbolIter::operator++ ( int ) 
+{
+	if ( currentPositionInVector + 1 < (symbolIterator->second).size()) {
+		currentPositionInVector++;
+		return;
+	}
+
+	/* Otherwise, we need a new std::vector. */
+	currentPositionInVector = 0;			
+	symbolIterator++;
+}
+
+const string & SymbolIter::currkey() const 
+{
+	return symbolIterator->first;
+}
+
+/* If it's important that this be const, we could try to initialize
+	currentVector to '& symbolIterator.currval()' in the constructor. */
+
+Symbol *SymbolIter::currval()
+{
+	if (currentPositionInVector >= symbolIterator->second.size())
+	{
+		return NULL;
+	}
+	return ((symbolIterator->second)[ currentPositionInVector ]);
+}

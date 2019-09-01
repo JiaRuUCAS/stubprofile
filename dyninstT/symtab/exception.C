@@ -33,7 +33,6 @@ SYMTAB_EXPORT ExceptionBlock::ExceptionBlock(Offset cStart) :
 }
 
 SYMTAB_EXPORT ExceptionBlock::ExceptionBlock(const ExceptionBlock &eb) :
-		Serializable(),
 		tryStart_(eb.tryStart_),
 		trySize_(eb.trySize_), 
 		catchStart_(eb.catchStart_),
@@ -92,26 +91,6 @@ SYMTAB_EXPORT bool ExceptionBlock::contains(Offset a) const
 { 
 	return (a >= tryStart_ && a < tryStart_ + trySize_); 
 }
-
-#if !defined(SERIALIZATION_DISABLED)
-Serializable * ExceptionBlock::serialize_impl(
-				SerializerBase *sb, const char *tag) THROW_SPEC (SerializerError)
-{
-	ifxml_start_element(sb, tag);
-	gtranslate(sb, tryStart_, "tryStart");
-	gtranslate(sb, trySize_, "trySize");
-	gtranslate(sb, catchStart_, "catchStart");
-	gtranslate(sb, hasTry_, "hasTry");
-	ifxml_end_element(sb, tag);
-	return NULL;
-}
-#else
-Serializable * ExceptionBlock::serialize_impl(
-				SerializerBase *, const char *) THROW_SPEC (SerializerError)
-{
-   return NULL;
-}
-#endif
 
 std::ostream& Dyninst::SymtabAPI::operator<<(ostream &s, const ExceptionBlock &eb) 
 {

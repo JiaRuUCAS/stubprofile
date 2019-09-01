@@ -31,7 +31,6 @@
 #ifndef __SYMTAB_TYPE_H__
 #define __SYMTAB_TYPE_H__
 
-#include "common/Serialization.h"
 #include "common/Annotatable.h"
 #include "symutil.h"
 #include <tbb/concurrent_vector.h>
@@ -51,16 +50,13 @@ class typeArray;
 class typeStruct;
 class typeUnion;
 class typeScalar;
-//class typeCommon;
+class typeCommon;
 class typeTypedef;
 class typeRef;
-//class CBlock;
-//class typeCollection;
+class CBlock;
+class typeCollection;
 class fieldListType;
 class TypeMemManager;
-
-//TODO?? class BPatch(to be  ??)function;
-
 
 typedef enum {dataEnum,
 			dataPointer,
@@ -103,12 +99,12 @@ SYMTAB_EXPORT const char *visibility2Str(visibility_t v);
 
 #define FIELD_ANNOTATABLE_CLASS AnnotatableDense
 
-class SYMTAB_EXPORT Field : public Serializable, public FIELD_ANNOTATABLE_CLASS 
+class SYMTAB_EXPORT Field : public FIELD_ANNOTATABLE_CLASS 
 {
 	friend class typeStruct;
 	friend class typeUnion;
-//	friend class typeCommon;
-//	friend class CBlock;
+	friend class typeCommon;
+	friend class CBlock;
 	
 	std::string fieldName_;
 	Type *type_;
@@ -134,28 +130,18 @@ class SYMTAB_EXPORT Field : public Serializable, public FIELD_ANNOTATABLE_CLASS
 	unsigned int getSize();
 	int getOffset();
 	
-//	void fixupUnknown(Module *);
-	Serializable * serialize_impl(SerializerBase *sb, 
-			const char *tag="Field") THROW_SPEC(SerializerError);
+	void fixupUnknown(Module *);
 	virtual bool operator==(const Field &) const;
 };
 				  
 #define TYPE_ANNOTATABLE_CLASS AnnotatableDense
 
-class SYMTAB_EXPORT Type : public Serializable, public  TYPE_ANNOTATABLE_CLASS 
+class SYMTAB_EXPORT Type : public  TYPE_ANNOTATABLE_CLASS 
 {
-//	friend class typeCollection;
-//	friend std::string parseStabString(Module *, int linenum, char *, int, 
-//						typeCommon *);
+	friend class typeCollection;
+	friend std::string parseStabString(Module *, int linenum, char *, int, 
+						typeCommon *);
 	static Type* upgradePlaceholder(Type *placeholder, Type *new_type);
-
-	public:
-
-	virtual void serialize_specific(SerializerBase *) 
-		THROW_SPEC(SerializerError) {}
-
-	Serializable * serialize_impl(SerializerBase *, 
-			const char * = "Type") THROW_SPEC (SerializerError);
 
  protected:
 	typeId_t ID_;			  /* unique ID of type */
@@ -218,7 +204,7 @@ public:
 	typeStruct *getStructType();
 	typeUnion *getUnionType();
 	typeScalar *getScalarType();
-//	typeCommon *getCommonType();
+	typeCommon *getCommonType();
 	typeTypedef *getTypedefType();
 	typeRef *getRefType();
 	std::string specificType();
@@ -273,11 +259,6 @@ class SYMTAB_EXPORT fieldListType : public Type, public fieldListInterface
 	void addField(unsigned num, std::string fieldname, Type *type, int offsetVal = -1, visibility_t vis = visUnknown);
 	void addField(Field *fld);
 	void addField(unsigned num, Field *fld);
-  
-	void serialize_fieldlist(Dyninst::SerializerBase *, 
-			const char * = "fieldListType") THROW_SPEC (SerializerError);
-  // void addField(const std::string &fieldname,  dataClass typeDes, 
-  //					Type *type, int offset, int size, visibility_t vis = visUnknown);
 };
 
 class SYMTAB_EXPORT rangedType : public Type, public rangedInterface {
@@ -285,11 +266,9 @@ class SYMTAB_EXPORT rangedType : public Type, public rangedInterface {
 	unsigned long low_;
 	unsigned long hi_;
  protected:
-	//rangedType(const std::string &name, typeId_t ID, dataClass typeDes, int size, const char *low, const char *hi); 
 	rangedType(std::string &name, typeId_t ID, dataClass typeDes, int size, unsigned long low, unsigned long hi);
 	rangedType(std::string &name, dataClass typeDes, int size, unsigned long low, unsigned long hi);
-	void serialize_ranged(SerializerBase *, 
-			const char * = "rangedType") THROW_SPEC (SerializerError);
+
  public:
 	rangedType();
 	~rangedType();
@@ -309,8 +288,6 @@ class SYMTAB_EXPORT derivedType : public Type, public derivedInterface {
 	~derivedType();
 	bool operator==(const Type &) const;
 	Type *getConstituentType() const;
-	void serialize_derived(SerializerBase *, 
-			const char * = "derivedType") THROW_SPEC(SerializerError);
 };
 
 // Derived classes from Type
@@ -329,12 +306,11 @@ class SYMTAB_EXPORT typeEnum : public Type {
 	tbb::concurrent_vector<std::pair<std::string, int> > &getConstants();
 	bool setName(const char *name);
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeFunction : public Type {
  protected:
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
  private:
 	Type *retType_; /* Return type of the function */
 	tbb::concurrent_vector<Type *> params_; 
@@ -351,7 +327,6 @@ class SYMTAB_EXPORT typeFunction : public Type {
 
 	tbb::concurrent_vector<Type *> &getParams();
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeScalar : public Type {
@@ -364,52 +339,47 @@ class SYMTAB_EXPORT typeScalar : public Type {
 	static typeScalar *create(std::string &name, int size, Symtab *obj = NULL);
 	bool isSigned();
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
-//class SYMTAB_EXPORT typeCommon : public fieldListType {
-// private:
-//	tbb::concurrent_vector<CBlock *> cblocks;
-// protected:
-//	void postFieldInsert(int nsize) { size_ += nsize; }
-////	void fixupUnknowns(Module *);
-// public:
-//	typeCommon();
-//	typeCommon(typeId_t ID, std::string name = "");
-//	typeCommon(std::string name);
-//	static typeCommon *create(std::string &name, Symtab *obj = NULL);
-//	tbb::concurrent_vector<CBlock *> *getCblocks() const;
-//	void beginCommonBlock();
-//	void endCommonBlock(Symbol *, void *baseAddr);
-//	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
-//};
-//
-//class SYMTAB_EXPORT CBlock : public Serializable, public AnnotatableSparse
-//{
-//	friend class typeCommon;
-// private:
-//	// the list of fields
-//	tbb::concurrent_vector<Field *> fieldList;
-//
-//	// which functions use this list
-//	//  Should probably be updated to use aggregates
-//	tbb::concurrent_vector<Symbol *> functions;
-//
-// public:
-//	 tbb::concurrent_vector<Field *> *getComponents();
-//	 tbb::concurrent_vector<Symbol *> *getFunctions();
-//
-////	void fixupUnknowns(Module *);
-//	
-//	Serializable * serialize_impl(SerializerBase *,
-//			const char *tag="CBlock") THROW_SPEC(SerializerError);
-//};
+class SYMTAB_EXPORT typeCommon : public fieldListType {
+ private:
+	tbb::concurrent_vector<CBlock *> cblocks;
+ protected:
+	void postFieldInsert(int nsize) { size_ += nsize; }
+	void fixupUnknowns(Module *);
+ public:
+	typeCommon();
+	typeCommon(typeId_t ID, std::string name = "");
+	typeCommon(std::string name);
+	static typeCommon *create(std::string &name, Symtab *obj = NULL);
+	tbb::concurrent_vector<CBlock *> *getCblocks() const;
+	void beginCommonBlock();
+	void endCommonBlock(Symbol *, void *baseAddr);
+};
+
+class SYMTAB_EXPORT CBlock : public AnnotatableSparse
+{
+	friend class typeCommon;
+ private:
+	// the list of fields
+	tbb::concurrent_vector<Field *> fieldList;
+
+	// which functions use this list
+	//  Should probably be updated to use aggregates
+	tbb::concurrent_vector<Symbol *> functions;
+
+ public:
+	 tbb::concurrent_vector<Field *> *getComponents();
+	 tbb::concurrent_vector<Symbol *> *getFunctions();
+
+	void fixupUnknowns(Module *);
+};
 
 class SYMTAB_EXPORT typeStruct : public fieldListType {
  protected:
 	void updateSize();
 	void postFieldInsert(int nsize);
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
 	void merge(Type *other);
  public:
 	typeStruct();
@@ -422,7 +392,6 @@ class SYMTAB_EXPORT typeStruct : public fieldListType {
 								Symtab *obj = NULL);
 
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeUnion : public fieldListType {
@@ -430,7 +399,7 @@ class SYMTAB_EXPORT typeUnion : public fieldListType {
 	void updateSize();
 	void postFieldInsert(int nsize);
 	void merge(Type *other);
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
  public:
 	typeUnion();
 	typeUnion(typeId_t ID, std::string name = "");
@@ -440,12 +409,11 @@ class SYMTAB_EXPORT typeUnion : public fieldListType {
 	static typeUnion *create(std::string &name, tbb::concurrent_vector<Field *> &fields, 
 							Symtab *obj = NULL);
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typePointer : public derivedType {
  protected: 
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
  public:
 	typePointer();
 	typePointer(typeId_t ID, Type *ptr, std::string name = "");
@@ -455,7 +423,6 @@ class SYMTAB_EXPORT typePointer : public derivedType {
 								Symtab *obj = NULL);
 	bool isCompatible(Type *otype);
 	bool setPtr(Type *ptr);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeTypedef: public derivedType {
@@ -464,7 +431,7 @@ class SYMTAB_EXPORT typeTypedef: public derivedType {
  
  protected:
 	void updateSize();
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
 		
  public:
 	typeTypedef();
@@ -474,12 +441,11 @@ class SYMTAB_EXPORT typeTypedef: public derivedType {
 	static typeTypedef *create(std::string &name, Type *ptr, Symtab *obj = NULL);
 	bool isCompatible(Type *otype);
 	bool operator==(const Type &otype) const;
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeRef : public derivedType {
  protected:
-//	void fixupUnknowns(Module *);
+	void fixupUnknowns(Module *);
  public:
 	typeRef();
 	typeRef(typeId_t ID, Type *refType, std::string name);
@@ -487,7 +453,6 @@ class SYMTAB_EXPORT typeRef : public derivedType {
 	static typeRef *create(std::string &name, Type *ptr, Symtab * obj = NULL);
 	bool isCompatible(Type *otype);
 	bool operator==(const Type &otype) const;
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeSubrange : public rangedType {
@@ -497,7 +462,6 @@ class SYMTAB_EXPORT typeSubrange : public rangedType {
 	typeSubrange( int size, long low, long hi, std::string name);
 	static typeSubrange *create(std::string &name, int size, long low, long hi, Symtab *obj = NULL);
 	bool isCompatible(Type *otype);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
 };
 
 class SYMTAB_EXPORT typeArray : public rangedType {
@@ -515,8 +479,7 @@ class SYMTAB_EXPORT typeArray : public rangedType {
 	Type *getBaseType() const;
 	bool isCompatible(Type *otype);
 	bool operator==(const Type &otype) const;
-//	void fixupUnknowns(Module *);
-	void serialize_specific(SerializerBase *) THROW_SPEC(SerializerError);
+	void fixupUnknowns(Module *);
 };
 
 } // namespace SymtabAPI

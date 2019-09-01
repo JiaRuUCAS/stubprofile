@@ -28,43 +28,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !defined (SERIALIZATION_PUBLIC_H)
-#define SERIALIZATION_PUBLIC_H
+#ifndef SYMTAB_DEBUG_H
+#define SYMTAB_DEBUG_H
 
-//  Hopefully just a few definitions allowing for a public interface to 
-//  serializing user-providede annotations
+#include <string>
 
-//#define SERIALIZATION_DISABLED
+#include "common/debug_common.h"
 
-#if defined(THROW_SPEC)
-#undef THROW_SPEC
-#endif
-#define THROW_SPEC(X)
+extern int sym_debug_parsing;
+extern int sym_debug_aggregates;
+extern int sym_debug_create;
+extern int sym_debug_object;
+extern int sym_debug_types;
+extern int sym_debug_rewrite;
 
-#include <stdlib.h>
+extern int parsing_printf(const char *format, ...);
+extern int aggregate_printf(const char *format, ...);
+extern int create_printf(const char *format, ...);
+extern int object_printf(const char *format, ...);
+extern int types_printf(const char *format, ...);
+extern int rewrite_printf(const char *format, ...);
 
-//namespace Dyninst {
-//	class Serializable {
-//	  public:
-//		virtual ~Serializable() {}
-//	};
-//	class SerializerBase {
-//	  public:
-//		virtual ~SerializerBase() {}
-//	};
-//
-//	template <class T>
-//	class AnnotationContainer
-//	{
-//		virtual bool deserialize_item(SerializerBase *) { return true; }
-//	  public:
-//		AnnotationContainer() { }
-//		virtual ~AnnotationContainer() { }
-//		virtual bool addItem_impl(T t) = 0;
-//		bool addItem(T t) { return addItem_impl(t); }
-//		virtual const char *getElementTypename() {return NULL;}
-//		virtual Serializable *ac_serialize_impl(SerializerBase *, const char *) THROW_SPEC(SerializerError) { return NULL; };
-//	};
-//}
+// And initialization
+extern bool init_debug_symtabAPI();
 
-#endif
+#endif /* SYMTAB_DEBUG_H */

@@ -2,7 +2,6 @@
 #define __SYMTAB_EXCEPTION_H__
 
 #include "symutil.h"
-#include "common/Serialization.h"
 #include "common/Annotatable.h"
 
 
@@ -12,14 +11,11 @@ namespace SymtabAPI {
  * Used to represent something like a C++ try/catch block.  
  * Currently only used on Linux
  **/
-class SYMTAB_EXPORT ExceptionBlock : public Serializable,
-		public AnnotatableSparse
+class SYMTAB_EXPORT ExceptionBlock : public AnnotatableSparse
 {
 	// Accessors provide consistent access to the *original* offsets.
 	// We allow this to be updated (e.g. to account for relocated code
 	public:
-		Serializable * serialize_impl(SerializerBase *sb, 
-						const char *tag = "exceptionBlock") THROW_SPEC (SerializerError);
 		ExceptionBlock(Offset tStart, unsigned tSize, Offset cStart);
 		ExceptionBlock(Offset cStart);
 		ExceptionBlock(const ExceptionBlock &eb);

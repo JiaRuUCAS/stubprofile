@@ -33,8 +33,8 @@
  * Symbol.h: symbol table objects.
 ************************************************************************/
 
-#if !defined(_Symbol_h_)
-#define _Symbol_h_
+#if !defined(__SYMTAB_SYMBOL_H__)
+#define __SYMTAB_SYMBOL_H__
 
 
 /************************************************************************
@@ -43,7 +43,6 @@
 
 #include "symutil.h"
 #include "common/Annotatable.h"
-#include "common/Serialization.h"
 #include <boost/shared_ptr.hpp>
 
 using namespace std;
@@ -52,32 +51,31 @@ namespace Dyninst{
 namespace SymtabAPI{
 
 class Module;
-//class typeCommon;
-//class localVarCollection;
+class typeCommon;
+class localVarCollection;
 class Region;
-//class Aggregate;
-//class Function;
-//class Variable;
+class Aggregate;
+class Function;
+class Variable;
 class Type;
 class typeCollection;
 class Symtab;
+class Object;
 
 /************************************************************************
  * class Symbol
 ************************************************************************/
 
-class SYMTAB_EXPORT Symbol : public Serializable,
-               public AnnotatableSparse 
+class SYMTAB_EXPORT Symbol : public AnnotatableSparse 
 {
-//	friend class typeCommon;
+	friend class typeCommon;
 	friend class Symtab;
-//	friend class AObject;
-//	friend class Object;
-//	friend class Aggregate;
+	friend class AObject;
+	friend class Object;
+	friend class Aggregate;
 	friend class relocationEntry;
-//
-//	friend std::string parseStabString(Module *, int linenum, char *, int,
-//					typeCommon *);
+	friend std::string parseStabString(Module *, int linenum, char *, int,
+					typeCommon *);
 
 	public:
 
@@ -186,15 +184,15 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool operator== (const Symbol &) const;
 	friend std::ostream& operator<< (std::ostream &os, const Symbol &s);
 
-   /***********************************************************
-     Name Output Functions
-    ***********************************************************/		
+	/***********************************************************
+	  Name Output Functions
+	 ***********************************************************/		
 	std::string getMangledName () const;
 	std::string	getPrettyName() const;
 	std::string getTypedName() const;
 
 	Module *getModule() const { return module_; } 
-//	Symtab *getSymtab() const;
+	Symtab *getSymtab() const;
 	SymbolType getType () const { return type_; }
 	SymbolLinkage getLinkage () const { return linkage_; }
 	Offset getOffset() const { return offset_; }
@@ -209,14 +207,14 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool isDebug() const { return isDebug_; }
 	bool isCommonStorage() const { return isCommonStorage_; }
 
-//	bool              isFunction()            const;
-//	bool              setFunction(Function * func);
-//	Function *        getFunction()           const;
+	bool				  isFunction()				const;
+	bool				  setFunction(Function * func);
+	Function *		  getFunction()			  const;
 
-//   bool              isVariable()            const;
-//   bool              setVariable(Variable *var);
-//   Variable *        getVariable()           const;
-//
+	bool				  isVariable()				const;
+	bool				  setVariable(Variable *var);
+	Variable *		  getVariable()			  const;
+
 	SymbolVisibility getVisibility() const { return visibility_; }
 
 	int getIndex() const { return index_; }
@@ -257,17 +255,13 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	int getInternalType() { return internal_type_; }
 	void setInternalType(int i) { internal_type_ = i; }
 
-	Serializable * serialize_impl(SerializerBase *,
-			SYMTAB_UNUSED const char *tag = "Symbol")
-			THROW_SPEC (SerializerError) { return NULL; }
-
 	public:
 
 	static std::string emptyString;
 
 	private:
 
-	Module*       module_;
+	Module*		 module_;
 	SymbolType			type_;
 	int					internal_type_;
 	SymbolLinkage		linkage_;
@@ -283,46 +277,74 @@ class SYMTAB_EXPORT Symbol : public Serializable,
 	bool				isAbsolute_;
 	bool				isDebug_;
 
-//	Aggregate *   aggregate_; // Pointer to Function or Variable container, if appropriate.
+	Aggregate *	aggregate_; // Pointer to Function or Variable container, if appropriate.
 
 	std::string mangledName_;
 
 	int index_;
 	int strindex_;
 
-	bool          isCommonStorage_;
+	bool			 isCommonStorage_;
 
 	std::vector<std::string> verNames_;
 
 	bool versionHidden_;
 
-//	void restore_module_and_region(SerializerBase *, 
-//	 	   std::string &, Offset) THROW_SPEC (SerializerError);
-
 };
+
+extern bool symbol_compare(const Symbol *s1, const Symbol *s2);
+extern void print_symbols(std::vector<Symbol *> &allsymbols);
+extern void print_symbol_map(
+				dyn_hash_map<std::string, std::vector<Symbol *>> *symbols);
 
 std::ostream& operator<< (std::ostream &os, const Symbol &s);
 
 class SYMTAB_EXPORT LookupInterface 
 {
-   public:
-      LookupInterface();
-      virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
-            Symbol::SymbolType sType) = 0;
-      virtual bool findSymbol(std::vector<Symbol *> &ret,
-                                            const std::string& name,
-                                            Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
-                                            NameType nameType = anyName,
-                                            bool isRegex = false,
-                                            bool checkCase = false,
-                                            bool includeUndefined = false) = 0;
-      virtual bool findType(Type *&type, std::string name) = 0;
-      virtual bool findVariableType(Type *&type, std::string name)= 0;
+	public:
+		LookupInterface();
+		virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
+						Symbol::SymbolType sType) = 0;
+		virtual bool findSymbol(std::vector<Symbol *> &ret,
+						const std::string& name,
+						Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
+						NameType nameType = anyName,
+						bool isRegex = false,
+						bool checkCase = false,
+						bool includeUndefined = false) = 0;
+		virtual bool findType(Type *&type, std::string name) = 0;
+		virtual bool findVariableType(Type *&type, std::string name)= 0;
 
-      virtual ~LookupInterface();
+		virtual ~LookupInterface();
 };
+
+class SymbolIter {
+  private:
+	dyn_hash_map< std::string, std::vector< Symbol *> > *symbols;
+	unsigned int currentPositionInVector;
+	dyn_hash_map< std::string, std::vector< Symbol *> >::iterator symbolIterator;
+	
+  public:
+	SymbolIter( Object & obj );
+	SymbolIter( const SymbolIter & src );
+	~SymbolIter ();
+	
+	void reset ();
+	
+	operator bool() const;
+	void operator++ ( int );
+	const std::string & currkey() const;
+	
+	/* If it's important that this be const, we could try to initialize
+		currentVector to '& symbolIterator.currval()' in the constructor. */
+	Symbol *currval();
+	
+ private:	
+	
+	SymbolIter & operator = ( const SymbolIter & ); // explicitly disallowed
+}; /* end class SymbolIter() */
 
 }//namespace SymtabAPI
 }//namespace Dyninst
 
-#endif /* !defined(_Symbol_h_) */
+#endif /* !defined(__SYMTAB_SYMBOL_H__) */

@@ -59,8 +59,7 @@ class Symbol;
 class Region;
 
 /* Represents a relocation entry */
-class SYMTAB_EXPORT relocationEntry :
-		public Serializable, public AnnotatableSparse {
+class SYMTAB_EXPORT relocationEntry : public AnnotatableSparse {
 	
 	public:
 
@@ -76,10 +75,6 @@ class SYMTAB_EXPORT relocationEntry :
 		relocationEntry(Offset ta, Offset ra, Offset add, std::string n,
 						Symbol *dynref = NULL, unsigned long relType = 0,
 						Region::RegionType rtype = Region::RT_REL);
-
-		Serializable * serialize_impl(SerializerBase *sb,
-						const char *tag = "relocationEntry")
-				THROW_SPEC (SerializerError);
 
 		Offset target_addr() const;
 		Offset rel_addr() const;

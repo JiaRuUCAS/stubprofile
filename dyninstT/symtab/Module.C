@@ -29,22 +29,22 @@
  */
 
 #include <string.h>
-//#include <common/src/debug_common.h>
-//#include "debug.h"
 
+#include "common/debug_common.h"
 #include "common/Annotatable.h"
+
+#include "debug.h"
 #include "Module.h"
 #include "Symtab.h"
-//#include "Collections.h"
-//#include "Function.h"
-//#include "Variable.h"
+#include "Collections.h"
+#include "Function.h"
+#include "Variable.h"
 //#include "LineInformation.h"
 #include "symutil.h"
 #include "annotations.h"
 
 #include "common/pathName.h"
-#include "common/serialize.h"
-//#include "Object.h"
+#include "Object.h"
 #include <boost/foreach.hpp>
 
 using namespace Dyninst;
@@ -78,7 +78,7 @@ const std::string& Statement::getFile() const {
 Module::Module(supportedLanguages lang, Offset adr,
 	  std::string fullNm, Symtab *img) :
 //	lineInfo_(NULL),
-//	typeInfo_(NULL),
+	typeInfo_(NULL),
 	fullName_(fullNm),
 	language_(lang),
 	addr_(adr),
@@ -92,7 +92,7 @@ Module::Module(supportedLanguages lang, Offset adr,
 Module::Module() :
 	objectLevelLineInfo(false),
 //	lineInfo_(NULL),
-//	typeInfo_(NULL),
+	typeInfo_(NULL),
 	fileName_(""),
 	fullName_(""),
 	language_(lang_Unknown),
@@ -107,7 +107,7 @@ Module::Module(const Module &mod) :
 	LookupInterface(),
 	objectLevelLineInfo(mod.objectLevelLineInfo),
 //	lineInfo_(mod.lineInfo_),
-//	typeInfo_(mod.typeInfo_),
+	typeInfo_(mod.typeInfo_),
 	info_(mod.info_),
 	fileName_(mod.fileName_),
 	fullName_(mod.fullName_),
@@ -124,7 +124,7 @@ Module::~Module()
 {
 //	if (!objectLevelLineInfo)
 //		delete lineInfo_;
-//	delete typeInfo_;
+	delete typeInfo_;
 }
 
 const std::string &Module::fileName() const
@@ -181,50 +181,50 @@ Offset Module::addr() const
 	return addr_;
 }
 
-//bool Module::findSymbol(std::vector<Symbol *> &found,
-//						const std::string& name,
-//						Symbol::SymbolType sType, 
-//						NameType nameType,
-//						bool isRegex,
-//						bool checkCase,
-//						bool includeUndefined) {
-//	unsigned orig_size = found.size();
-//	std::vector<Symbol *> obj_syms;
-//	
-//	if (exec()->findSymbol(obj_syms, name, sType, nameType, isRegex, checkCase, includeUndefined)) {
-//		return false;
-//	}
-//	
-//	for (unsigned i = 0; i < obj_syms.size(); i++) {
-//		if (obj_syms[i]->getModule() == this)
-//			found.push_back(obj_syms[i]);
-//	}
-//	
-//	if (found.size() > orig_size) 
-//		return true;
-//	
-//	return false;		
-//}
-//
-//bool Module::getAllSymbols(std::vector<Symbol *> &found) {
-//	unsigned orig_size = found.size();
-//	std::vector<Symbol *> obj_syms;
-//	
-//	if (!exec()->getAllSymbols(obj_syms)) {
-//		return false;
-//	}
-//	
-//	for (unsigned i = 0; i < obj_syms.size(); i++) {
-//		if (obj_syms[i]->getModule() == this)
-//			found.push_back(obj_syms[i]);
-//	}
-//	
-//	if (found.size() > orig_size) 
-//		return true;
-//	
-//	return false;		
-//}
-//
+bool Module::findSymbol(std::vector<Symbol *> &found,
+						const std::string& name,
+						Symbol::SymbolType sType, 
+						NameType nameType,
+						bool isRegex,
+						bool checkCase,
+						bool includeUndefined) {
+	unsigned orig_size = found.size();
+	std::vector<Symbol *> obj_syms;
+	
+	if (exec()->findSymbol(obj_syms, name, sType, nameType, isRegex, checkCase, includeUndefined)) {
+		return false;
+	}
+	
+	for (unsigned i = 0; i < obj_syms.size(); i++) {
+		if (obj_syms[i]->getModule() == this)
+			found.push_back(obj_syms[i]);
+	}
+	
+	if (found.size() > orig_size) 
+		return true;
+	
+	return false;		
+}
+
+bool Module::getAllSymbols(std::vector<Symbol *> &found) {
+	unsigned orig_size = found.size();
+	std::vector<Symbol *> obj_syms;
+	
+	if (!exec()->getAllSymbols(obj_syms)) {
+		return false;
+	}
+	
+	for (unsigned i = 0; i < obj_syms.size(); i++) {
+		if (obj_syms[i]->getModule() == this)
+			found.push_back(obj_syms[i]);
+	}
+	
+	if (found.size() > orig_size) 
+		return true;
+	
+	return false;		
+}
+
 //bool Module::getAddressRanges(std::vector<AddressRange >&ranges,
 //	  std::string lineSource, unsigned int lineNo)
 //{
@@ -313,60 +313,59 @@ Offset Module::addr() const
 //
 //	return (statements.size() > initial_size);
 //}
-//
-//vector<Type *> *Module::getAllTypes()
-//{
-//	exec_->parseTypesNow();
-//	if(typeInfo_) return typeInfo_->getAllTypes();
-//	return NULL;
-//	
-//}
-//
-//vector<pair<string, Type *> > *Module::getAllGlobalVars()
-//{
-//	exec_->parseTypesNow();
-//	if(typeInfo_) return typeInfo_->getAllGlobalVariables();
-//	return NULL;	
-//}
-//
-//typeCollection *Module::getModuleTypes()
-//{
-//	exec_->parseTypesNow();
-//	return getModuleTypesPrivate();
-//}
-//
-//typeCollection *Module::getModuleTypesPrivate()
-//{
-//  return typeInfo_;
-//}
-//
-//bool Module::findType(Type *&type, std::string name)
-//{
-//	typeCollection *tc = getModuleTypes();
-//	if (!tc) return false;
-//
-//	type = tc->findType(name);
-//
-//	if (type == NULL)
-//	  return false;
-//
-//	return true;
-//}
-//
-//bool Module::findVariableType(Type *&type, std::string name)
-//{
-//	typeCollection *tc = getModuleTypes();
-//	if (!tc) return false;
-//
-//	type = tc->findVariableType(name);
-//
-//	if (type == NULL)
-//	  return false;
-//
-//	return true;
-//}
-//
-//
+
+vector<Type *> *Module::getAllTypes()
+{
+	exec_->parseTypesNow();
+	if(typeInfo_) return typeInfo_->getAllTypes();
+	return NULL;
+}
+
+vector<pair<string, Type *> > *Module::getAllGlobalVars()
+{
+	exec_->parseTypesNow();
+	if(typeInfo_) return typeInfo_->getAllGlobalVariables();
+	return NULL;	
+}
+
+typeCollection *Module::getModuleTypes()
+{
+	exec_->parseTypesNow();
+	return getModuleTypesPrivate();
+}
+
+typeCollection *Module::getModuleTypesPrivate()
+{
+  return typeInfo_;
+}
+
+bool Module::findType(Type *&type, std::string name)
+{
+	typeCollection *tc = getModuleTypes();
+	if (!tc) return false;
+
+	type = tc->findType(name);
+
+	if (type == NULL)
+	  return false;
+
+	return true;
+}
+
+bool Module::findVariableType(Type *&type, std::string name)
+{
+	typeCollection *tc = getModuleTypes();
+	if (!tc) return false;
+
+	type = tc->findVariableType(name);
+
+	if (type == NULL)
+	  return false;
+
+	return true;
+}
+
+
 //bool Module::setLineInfo(LineInformation *lineInfo)
 //{
 //	assert(!lineInfo_);
@@ -401,115 +400,107 @@ Offset Module::addr() const
 //
 //	return false;
 //}
-//
-//bool Module::isShared() const
-//{
-//	return exec_->getObjectType() == obj_SharedLib;
-//}
-//
-//bool Module::getAllSymbolsByType(std::vector<Symbol *> &found, Symbol::SymbolType sType)
-//{
-//	unsigned orig_size = found.size();
-//	std::vector<Symbol *> obj_syms;
-//
-//	if (!exec()->getAllSymbolsByType(obj_syms, sType))
-//	  return false;
-//
-//	for (unsigned i = 0; i < obj_syms.size(); i++) 
-//	{
-//	  if (obj_syms[i]->getModule() == this)
-//		 found.push_back(obj_syms[i]);
-//	}
-//
-//	if (found.size() > orig_size)
-//	{
-//	  return true;
-//	}
-//
-//	serr = No_Such_Symbol;
-//	return false;
-//}
-//
-//bool Module::getAllFunctions(std::vector<Function *> &ret)
-//{
-//	return exec()->getAllFunctions(ret);
-//}
-//
-//bool Module::setDefaultNamespacePrefix(string str)
-//{
-//	return exec_->setDefaultNamespacePrefix(str);
-//}
-//
-//bool Module::findVariablesByName(std::vector<Variable *> &ret, const std::string& name,
-//				 NameType nameType,
-//				 bool isRegex,
-//				 bool checkCase) {
-//  bool succ = false;
-//  std::vector<Variable *> tmp;
-//
-//  if (!exec()->findVariablesByName(tmp, name, nameType, isRegex, checkCase)) {
-//	return false;
-//  }
-//  for (unsigned i = 0; i < tmp.size(); i++) {
-//	if (tmp[i]->getModule() == this) {
-//	  ret.push_back(tmp[i]);
-//	  succ = true;
-//	}
-//  }
-//  return succ;
-//}
-//
-//void Module::addRange(Dyninst::Address low, Dyninst::Address high)
-//{
-//	dwarf_printf("Adding range [%lx, %lx) to %s\n", low, high, fileName().c_str());
-//	std::set<AddressRange>::iterator lb = ranges.lower_bound(AddressRange(low, high));
-//	if(lb != ranges.end() && lb->first <= low)
-//	{
-//		if(lb->second >= high)
-//		{
-//			return;
-//		}
-//		ranges.insert(AddressRange(lb->first, high));
-////		printf("Actual is [%lx, %lx) due to overlap with [%lx, %lx)\n", lb->first, high, lb->first, lb->second);
-//		ranges.erase(lb);
-//	}
-//	else
-//	{
-//		ranges.insert(AddressRange(low, high));
-//	}
-//
-////	ranges.push_back(std::make_pair(low, high));
-////	exec_->mod_lookup()->insert(new ModRange(low, high, this));
-//}
-//
-//void Module::finalizeRanges()
-//{
-//	if(ranges.empty()) {
-//		return;
-//	}
-//	auto bit = ranges.begin();
-//	Address ext_s = bit->first;
-//	Address ext_e = ext_s;
-//
-//	for( ; bit != ranges.end(); ++bit) {
-//		if(bit->first > ext_e) {
-//			finalizeOneRange(ext_s, ext_e);
-//			ext_s = bit->first;
-//		}
-//		ext_e = bit->second;
-//	}
-//	finalizeOneRange(ext_s, ext_e);
-//	ranges_finalized = true;
-//	ranges.clear();
-//}
-//
-//void Module::finalizeOneRange(Address ext_s, Address ext_e) const {
-//	ModRange* r = new ModRange(ext_s, ext_e, const_cast<Module*>(this));
-//	ModRangeLookup* lookup = exec_->mod_lookup();
-////	cout << "Inserting range " << std::hex << (*r) << std::dec << endl;
-//	lookup->insert(r);
-//}
-//
+
+bool Module::isShared() const
+{
+	return exec_->getObjectType() == obj_SharedLib;
+}
+
+bool Module::getAllSymbolsByType(std::vector<Symbol *> &found, Symbol::SymbolType sType)
+{
+	unsigned orig_size = found.size();
+	std::vector<Symbol *> obj_syms;
+
+	if (!exec()->getAllSymbolsByType(obj_syms, sType))
+	  return false;
+
+	for (unsigned i = 0; i < obj_syms.size(); i++) 
+	{
+	  if (obj_syms[i]->getModule() == this)
+		 found.push_back(obj_syms[i]);
+	}
+
+	if (found.size() > orig_size)
+	{
+	  return true;
+	}
+
+	serr = No_Such_Symbol;
+	return false;
+}
+
+bool Module::getAllFunctions(std::vector<Function *> &ret)
+{
+	return exec()->getAllFunctions(ret);
+}
+
+bool Module::setDefaultNamespacePrefix(string str)
+{
+	return exec_->setDefaultNamespacePrefix(str);
+}
+
+bool Module::findVariablesByName(std::vector<Variable *> &ret, const std::string& name,
+				 NameType nameType,
+				 bool isRegex,
+				 bool checkCase) {
+	bool succ = false;
+	std::vector<Variable *> tmp;
+
+	if (!exec()->findVariablesByName(tmp, name, nameType, isRegex, checkCase)) {
+		return false;
+	}
+
+	for (unsigned i = 0; i < tmp.size(); i++) {
+		if (tmp[i]->getModule() == this) {
+			ret.push_back(tmp[i]);
+			succ = true;
+		}
+	}
+	return succ;
+}
+
+void Module::addRange(Dyninst::Address low, Dyninst::Address high)
+{
+	std::set<AddressRange>::iterator lb = ranges.lower_bound(AddressRange(low, high));
+
+	if(lb != ranges.end() && lb->first <= low) {
+		if(lb->second >= high)
+			return;
+		ranges.insert(AddressRange(lb->first, high));
+		ranges.erase(lb);
+	}
+	else {
+		ranges.insert(AddressRange(low, high));
+	}
+}
+
+void Module::finalizeRanges()
+{
+	if(ranges.empty())
+		return;
+
+	auto bit = ranges.begin();
+	Address ext_s = bit->first;
+	Address ext_e = ext_s;
+
+	for( ; bit != ranges.end(); ++bit) {
+		if(bit->first > ext_e) {
+			finalizeOneRange(ext_s, ext_e);
+			ext_s = bit->first;
+		}
+		ext_e = bit->second;
+	}
+	finalizeOneRange(ext_s, ext_e);
+	ranges_finalized = true;
+	ranges.clear();
+}
+
+void Module::finalizeOneRange(Address ext_s, Address ext_e) const {
+	ModRange* r = new ModRange(ext_s, ext_e, const_cast<Module*>(this));
+	ModRangeLookup* lookup = exec_->mod_lookup();
+	lookup->insert(r);
+}
+
 //void Module::addDebugInfo(Module::DebugInfoT info) {
 ////	cout << "Adding CU DIE to " << fileName() << endl;
 //	info_.push_back(info);

@@ -35,7 +35,6 @@
 #include "Symbol.h"
 
 #include "common/Annotatable.h"
-#include "common/Serialization.h"
 #include "common/IBSTree.h"
 #include "common/IBSTree-fast.h"
 
@@ -47,9 +46,9 @@
 namespace Dyninst{
 	namespace SymtabAPI{
 
-//		class typeCollection;
+		class typeCollection;
 //		class LineInformation;
-//		class localVar;
+		class localVar;
 		class Symtab;
 
 
@@ -158,48 +157,48 @@ namespace Dyninst{
 			Offset addr() const;
 			Symtab *exec() const;
 
-//			bool isShared() const;
-//
-//
-//			// Symbol output methods
-//			virtual bool findSymbol(std::vector<Symbol *> &ret,
-//									const std::string& name,
-//									Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
-//									NameType nameType = anyName,
-//									bool isRegex = false,
-//									bool checkCase = false,
-//									bool includeUndefined = false);
-//			virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
-//											 Symbol::SymbolType sType);
-//			virtual bool getAllSymbols(std::vector<Symbol *> &ret);
-//
-//
-//			// Function based methods
-//			bool getAllFunctions(std::vector<Function *>&ret);
+			bool isShared() const;
+
+
+			// Symbol output methods
+			virtual bool findSymbol(std::vector<Symbol *> &ret,
+									const std::string& name,
+									Symbol::SymbolType sType = Symbol::ST_UNKNOWN,
+									NameType nameType = anyName,
+									bool isRegex = false,
+									bool checkCase = false,
+									bool includeUndefined = false);
+			virtual bool getAllSymbolsByType(std::vector<Symbol *> &ret,
+											 Symbol::SymbolType sType);
+			virtual bool getAllSymbols(std::vector<Symbol *> &ret);
+
+
+			// Function based methods
+			bool getAllFunctions(std::vector<Function *>&ret);
 //			bool findFunctionByEntryOffset(Function *&ret, const Offset offset);
 //			bool findFunctionsByName(std::vector<Function *> &ret, const std::string& name,
 //									 NameType nameType = anyName,
 //									 bool isRegex = false,
 //									 bool checkCase = true);
-//
-//			// Variable based methods
+
+			// Variable based methods
 //			bool findVariableByOffset(Variable *&ret, const Offset offset);
-//			bool findVariablesByName(std::vector<Variable *> &ret, const std::string& name,
-//									 NameType nameType = anyName,
-//									 bool isRegex = false,
-//									 bool checkCase = true);
+			bool findVariablesByName(std::vector<Variable *> &ret, const std::string& name,
+									 NameType nameType = anyName,
+									 bool isRegex = false,
+									 bool checkCase = true);
 //			bool getAllVariables(std::vector<Variable *> &ret);
-//
-//
-//			// Type output methods
-//			virtual bool findType(Type *&type, std::string name);
-//			virtual bool findVariableType(Type *&type, std::string name);
-//
-//			std::vector<Type *> *getAllTypes();
-//			std::vector<std::pair<std::string, Type *> > *getAllGlobalVars();
-//
-//			typeCollection *getModuleTypes();
-//
+
+
+			// Type output methods
+			virtual bool findType(Type *&type, std::string name);
+			virtual bool findVariableType(Type *&type, std::string name);
+
+			std::vector<Type *> *getAllTypes();
+			std::vector<std::pair<std::string, Type *> > *getAllGlobalVars();
+
+			typeCollection *getModuleTypes();
+
 //			/***** Local Variable Information *****/
 //			bool findLocalVariable(std::vector<localVar *>&vars, std::string name);
 //
@@ -213,28 +212,28 @@ namespace Dyninst{
 //			bool getStatements(std::vector<Statement::Ptr> &statements);
 //			LineInformation *getLineInformation();
 //			LineInformation* parseLineInformation();
-//
-//			bool setDefaultNamespacePrefix(std::string str);
-//
-//
-//			//  Super secret private methods that aren't really private
-//			typeCollection *getModuleTypesPrivate();
-//			void setModuleTypes(typeCollection* tc)
-//			{
-//				typeInfo_ = tc;
-//			}
+
+			bool setDefaultNamespacePrefix(std::string str);
+
+
+			//  Super secret private methods that aren't really private
+			typeCollection *getModuleTypesPrivate();
+			void setModuleTypes(typeCollection* tc)
+			{
+				typeInfo_ = tc;
+			}
 //
 //			bool setLineInfo(Dyninst::SymtabAPI::LineInformation *lineInfo);
-//			void addRange(Dyninst::Address low, Dyninst::Address high);
-//			bool hasRanges() const { return !ranges.empty() || ranges_finalized; }
+			void addRange(Dyninst::Address low, Dyninst::Address high);
+			bool hasRanges() const { return !ranges.empty() || ranges_finalized; }
 //			void addDebugInfo(Module::DebugInfoT info);
 //
-//			void finalizeRanges();
+			void finalizeRanges();
 
 		private:
             bool objectLevelLineInfo;
 //			Dyninst::SymtabAPI::LineInformation* lineInfo_;
-//			typeCollection* typeInfo_;
+			typeCollection* typeInfo_;
 			std::vector<Module::DebugInfoT> info_;
 
 
@@ -253,7 +252,7 @@ namespace Dyninst{
 		private:
 			bool ranges_finalized;
 
-//			void finalizeOneRange(Address ext_s, Address ext_e) const;
+			void finalizeOneRange(Address ext_s, Address ext_e) const;
 		};
 
 		template <typename OS>

@@ -7,6 +7,7 @@ set(DYNT_COMMON_SRC
 		debug_common.C
 		dthread.C
 		dyn_regs.C
+		Elf_X.C
 		fraction.C
 		linuxKludges.C
 		lprintf.C
@@ -16,8 +17,6 @@ set(DYNT_COMMON_SRC
 		pathName.C
 		pfq-rwlock.C
 		race-detector-annotations.C
-		serialize-bin.C
-		serialize-xml.C
 		sha1.C
 		stats.C
 		string-regex.C
@@ -33,6 +32,7 @@ set(DYNT_COMMON_SRC
 add_library(dyninstT_common ${DYNT_COMMON_SRC})
 
 target_link_private_libraries(dyninstT_common pthread)
+target_link_private_libraries(dyninstT_common elf)
 target_link_private_libraries(dyninstT_common ${BOOST_LIBS})
 
 install(TARGETS dyninstT_common

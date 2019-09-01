@@ -40,16 +40,16 @@ namespace Dyninst {
 /*
  * storageClass: Encodes how a variable is stored.
  *
- * storageAddr           - Absolute address of variable.
- * storageReg            - Register which holds variable value.
- * storageRegOffset      - Address of variable = $reg + address.
+ * storageAddr			  - Absolute address of variable.
+ * storageReg				- Register which holds variable value.
+ * storageRegOffset		- Address of variable = $reg + address.
  */
 
 typedef enum {
-   storageUnset,
-   storageAddr,
-   storageReg,
-   storageRegOffset
+	storageUnset,
+	storageAddr,
+	storageReg,
+	storageRegOffset
 } storageClass;
 
 COMMON_EXPORT const char *storageClass2Str(storageClass sc);
@@ -57,48 +57,75 @@ COMMON_EXPORT const char *storageClass2Str(storageClass sc);
 /*
  * storageRefClass: Encodes if a variable can be accessed through a register/address.
  *
- * storageRef        - There is a pointer to variable.
- * storageNoRef      - No reference. Value can be obtained using storageClass.
+ * storageRef		  - There is a pointer to variable.
+ * storageNoRef		- No reference. Value can be obtained using storageClass.
  */
 typedef enum {
-   storageRefUnset,
-   storageRef,
-   storageNoRef
+	storageRefUnset,
+	storageRef,
+	storageNoRef
 } storageRefClass;
 
 COMMON_EXPORT const char *storageRefClass2Str(storageRefClass sc);
 
-//location for a variable
-//Use mr_reg instead of reg for new code.  reg left in for backwards
-// compatibility.
-
+/* Location for a variable.
+ * Use mr_reg instead of reg for new code. reg left in for
+ * backwards compatibility.
+ */
 class VariableLocation  {
   public:
+	/* |     stClass      |   refClass   |       Description       |
+	 * |==================|==============|=========================|
+	 * | storageAddr      | storageRef   | frameOffset contains    |
+	 * |                  |              | the address of a        |
+	 * |                  |              | pointer to the variable |
+	 * |                  |--------------|-------------------------|
+	 * |                  | storageNoRef | frameOffset contains    |
+	 * |                  |              | the address of the var. |
+	 * |------------------|--------------|-------------------------|
+	 * | storageReg       | storageRef   | mr_reg contains the     |
+	 * |                  |              | address of the variable |
+	 * |                  |--------------|-------------------------|
+	 * |                  | storageNoRef | mr_reg contains the var.|
+	 * |------------------|--------------|-------------------------|
+	 * | storageRegOffset | storageRef   | frameOffset + content   |
+	 * |                  |              | of mr_reg == the addr   |
+	 * |                  |              | of the var.             |
+	 * |                  |--------------|-------------------------|
+	 * |                  | storageNoRef | frameOffset + content   |
+	 * |                  |              | of mr_reg == the var.   |
+	 * |------------------|--------------|-------------------------|
+	 */
 	storageClass stClass;
 	storageRefClass refClass;
-        MachRegister mr_reg;
+	MachRegister mr_reg;
 	long frameOffset;
-    long frameOffsetAbs;
+	long frameOffsetAbs;
+
+	/* A VariableLocation is valid within the address range
+	 * represented by lowPC and hiPC. If these are 0 and -1,
+	 * respectively, the VariableLocation is always valid.
+	 */
 	Address lowPC;
 	Address hiPC;
-   
-VariableLocation() :
-   stClass(storageUnset),
-      refClass(storageRefUnset),
-      frameOffset(0),
-      frameOffsetAbs(0),
-      lowPC(0),
-      hiPC(0) {}
+	
+	VariableLocation() :
+		stClass(storageUnset),
+		refClass(storageRefUnset),
+		frameOffset(0),
+		frameOffsetAbs(0),
+		lowPC(0),
+		hiPC(0) {}
 
-   bool operator==(const VariableLocation &rhs) const {
-      return ((stClass == rhs.stClass) &&
-              (refClass == rhs.refClass) &&
-              (mr_reg == rhs.mr_reg) &&
-              (frameOffset == rhs.frameOffset) &&
-              (frameOffsetAbs == rhs.frameOffsetAbs) &&
-              (lowPC == rhs.lowPC) &&
-              (hiPC == rhs.hiPC));
-   }
+	bool operator==(const VariableLocation &rhs) const {
+		return ((stClass == rhs.stClass) &&
+				  (refClass == rhs.refClass) &&
+				  (mr_reg == rhs.mr_reg) &&
+				  (frameOffset == rhs.frameOffset) &&
+				  (frameOffsetAbs == rhs.frameOffsetAbs) &&
+				  (lowPC == rhs.lowPC) &&
+				  (hiPC == rhs.hiPC));
+	}
 
 };
 

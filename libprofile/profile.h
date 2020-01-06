@@ -44,6 +44,8 @@ struct prof_record {
 	uint64_t count;
 };
 
+#define PROF_RECORD_CACHE (1 << 16)
+
 // per-thread data
 struct prof_tinfo {
 //	struct list_head node;
@@ -52,13 +54,15 @@ struct prof_tinfo {
 	int tid;
 	uint8_t state;
 
+	FILE *output_file;
+
 	/* Per-function counters
 	 * Its length is (max_index + 1)
 	 */
 	struct prof_func *func_counters;
 
 	uint32_t nb_record;
-	struct prof_record records[4096];
+	struct prof_record records[PROF_RECORD_CACHE];
 //	struct prof_record *records;
 };
 
@@ -90,5 +94,7 @@ void prof_thread_exit(void);
 
 void prof_count_pre(unsigned int func_index);
 void prof_count_post(unsigned int func_index);
+
+void prof_dump_records(void);
 
 #endif	// __PROFILE_H__

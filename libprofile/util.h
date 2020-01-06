@@ -70,6 +70,25 @@ static inline unsigned int __roundup_2(unsigned int num)
 	return num;
 }
 
+static inline ssize_t readn(int fd, void *buf, size_t n)
+{
+	size_t left = n;
+
+	while (left) {
+		ssize_t ret = 0;
+
+		ret = read(fd, buf, left);
+		if (ret < 0 && errno == EINTR)
+			continue;
+		if (ret <= 0)
+			return ret;
+
+		left -= ret;
+		buf += ret;
+	}
+	return n;
+}
+
 /* For the buffer size of strerror_r */
 #define STRERR_BUFSIZE	128
 

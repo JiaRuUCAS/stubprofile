@@ -169,9 +169,24 @@ static void __init_thread(void)
 					nb_funcs,
 					globalinfo.min_index,
 					globalinfo.max_index);
+
+	// open data file
+	char buf[32] = {'\0'};
+
+	sprintf(buf, "profile_%d.data", info->pid);
+	info->output_file = fopen(buf, "w");
+	if (!info->output_file) {
+		free(info->func_counters);
+		info->func_counters = NULL;
+		info->state = PROF_STATE_ERROR;
+		LOG_ERROR("Failed to open data file %s", buf);
+		return;
+	}
+	LOG_INFO("Data file %s", buf);
+
 	memset(info->func_counters, 0, sizeof(struct prof_func) * nb_funcs);
 
-	memset(info->records, 0, sizeof(struct prof_record) * 4096);
+	memset(info->records, 0, sizeof(struct prof_record) * PROF_RECORD_CACHE);
 //	// allocate record storage
 //	if (__init_record(info) < 0) {
 //		LOG_ERROR("Failed to init record storage");
@@ -265,6 +280,17 @@ void prof_thread_exit(void)
 		local->func_counters = NULL;
 	}
 
+	// write data to file
+	LOG_INFO("%u records", local->nb_record);
+	if (local->nb_record && local->output_file) {
+		fwrite(local->records, sizeof(struct prof_record), local->nb_record,
+						local->output_file);
+		local->nb_record = 0;
+	}
+
+	// close output file
+	if (local->output_file)
+		fclose(local->output_file);
 //	if (local->records) {
 //		munmap(local->records, PROF_RECORD_MAX * sizeof(struct prof_record));
 //		local->records = NULL;
@@ -307,14 +333,18 @@ static void __read_count(struct prof_evlist *evlist,
 		local->records[local->nb_record].func_idx = func_index;
 		local->records[local->nb_record].ev_idx = i;
 		local->records[local->nb_record].count = prof_evsel__rdpmc(evsel, local->tid);
+//		local->records[local->nb_record].count = prof_evsel__read(evsel, local->tid);
 		i++;
 		local->nb_record ++;
 //		if (local->nb_record == PROF_RECORD_MAX) {
 //			local->state = PROF_STATE_STOP;
 //			break;
 //		}
-		if (local->nb_record == 4096)
+		if (local->nb_record == PROF_RECORD_CACHE) {
+//			fwrite(local->records, sizeof(struct prof_record),
+//							local->nb_record, local->output_file);
 			local->nb_record = 0;
+		}
 	}
 }
 #endif
@@ -357,4 +387,14 @@ void prof_count_post(unsigned int func_index)
 //		cnt = func->counter[func->deep];
 		__read_count(global->evlist, func_index, local);
 //	}
+}
+
+void prof_dump_records(void) {
+	struct prof_tinfo *local = &tinfo;
+	unsigned int i = 0;
+
+	for (i = 0; i < local->nb_record; i++) {
+		fprintf(stdout, "%u,%lu\n",
+				local->records[i].func_idx, local->records[i].count);
+	}
 }

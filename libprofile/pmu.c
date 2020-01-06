@@ -294,6 +294,7 @@ static struct prof_pmu pmu_list[PROF_PMU_MAX] = {
 
 static bool pmu_is_init = false;
 
+#if 0
 static bool __pmu__is_supported(int event)
 {
 	bool ret = true;
@@ -334,14 +335,15 @@ static bool __pmu__is_supported(int event)
 
 	return ret;
 }
+#endif
 
 static void __pmu__init(void)
 {
-	int i = 0;
-
-	for (i = 0; i < PROF_PMU_MAX; i++) {
-		pmu_list[i].is_support = __pmu__is_supported(i);
-	}
+//	int i = 0;
+//
+//	for (i = 0; i < PROF_PMU_MAX; i++) {
+//		pmu_list[i].is_support = __pmu__is_supported(i);
+//	}
 	pmu_is_init = true;
 }
 
@@ -357,10 +359,10 @@ struct prof_pmu *prof_pmu__find(char *str)
 	for (i = 0; i < PROF_PMU_MAX; i++) {
 		pmu = &pmu_list[i];
 		if (strcmp(str, pmu->name) == 0) {
-			if (!pmu->is_support) {
-				LOG_ERROR("Event %s is not supported", pmu->name);
-				return NULL;
-			}
+//			if (!pmu->is_support) {
+//				LOG_ERROR("Event %s is not supported", pmu->name);
+//				return NULL;
+//			}
 			return pmu;
 		}
 	}

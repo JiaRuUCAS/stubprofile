@@ -327,7 +327,7 @@ prof_evsel__parse(const char *str, struct perf_event_attr *attr)
 	return name;
 }
 
-#if 0
+#if 1
 uint64_t
 prof_evsel__read(struct prof_evsel *evsel, int thread)
 {
@@ -357,14 +357,18 @@ prof_evsel__rdpmc(struct prof_evsel *evsel, int thread)
 {
 	uint64_t value;
 	uint32_t index;
+//	struct perf_event_mmap_page *pc = NULL;
 
-	if (!evsel->is_enable)
+	if (!evsel->is_enable) {
 		return 0;
+	}
 
+//	pc = (struct perf_event_mmap_page *)evsel->per_thread[thread].mm_page;
 	index = evsel->per_thread[thread].hwc_index;
 
 //	rdpmcl(index - 1, value);
-	rdpmcl(index, value);
+	rdpmcl(index - 1, value);
+//	fprintf(stdout, "hwc %u, value %lu\n", index, value);
 
 	return value;
 }

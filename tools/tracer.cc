@@ -416,11 +416,6 @@ void TracerTest::staticUsage(void)
 			"                           is matching all functions.\n");
 }
 
-void TracerTest::usage(void)
-{
-	staticUsage();
-}
-
 bool TracerTest::parseArgs(int argc, char **argv)
 {
 	int c;
@@ -445,14 +440,14 @@ bool TracerTest::parseArgs(int argc, char **argv)
 
 			default:
 				LOG_ERROR("Unknown option %c, usage:", c);
-				usage();
+				staticUsage();
 				return false;
 		}
 	}
 
 	if (pid == -1) {
 		LOG_ERROR("No process specified, usage:");
-		usage();
+		staticUsage();
 		return false;
 	}
 

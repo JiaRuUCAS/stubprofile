@@ -31,6 +31,8 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #endif
 
+#define STUBPROFILE_DEBUG
+
 #define LOG_ERROR(format, ...) \
 		fprintf(stderr, "[ERROR] %s %d: " format "\n", \
 						__FILE__, __LINE__, ##__VA_ARGS__);
@@ -39,7 +41,7 @@
 		fprintf(stdout, "[INFO] %s %d: " format "\n", \
 						__FILE__, __LINE__, ##__VA_ARGS__);
 
-#ifdef DT_DEBUG
+#ifdef STUBPROFILE_DEBUG
 #define LOG_DEBUG(format, ...) \
 		fprintf(stderr, "[DEBUG] %s %d: " format "\n", \
 						__FILE__, __LINE__, ##__VA_ARGS__);

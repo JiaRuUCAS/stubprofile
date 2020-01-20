@@ -58,7 +58,6 @@ class TracerTest: public Test {
 		static void staticUsage(void);
 		static Test *construct(void);
 
-		void usage(void);
 		bool parseArgs(int argc, char **argv);
 		bool init(void);
 		bool process(void);

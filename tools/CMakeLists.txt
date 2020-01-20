@@ -19,10 +19,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -std=c++11")
 
 ######################### tracer ############################
 # set source files
-set(TRACER_SRC tracer.cc
-			   funcmap.cc
-			   funcmaptest.cc
-			   test.cc)
+set(TRACER_SRC
+		count.cc
+		edit.cc
+		funcmap.cc
+		funcmaptest.cc
+		test.cc
+		tracer.cc)
 
 # add build target
 add_executable(stubprofile ${TRACER_SRC})

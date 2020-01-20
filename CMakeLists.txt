@@ -41,7 +41,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsequence-point -Wstrict-aliasing -Wstrict-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wuninitialized -Wunknown-pragmas -Wunused-function -Wunused-label -Wvolatile-register-var")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes")
 
-add_subdirectory(libfunccnt)
+add_subdirectory(libprobe)
 add_subdirectory(libprofile)
 
 add_subdirectory(tools)

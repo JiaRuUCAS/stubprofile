@@ -5,6 +5,7 @@
 #include "util.h"
 #include "tracer.h"
 #include "funcmap.h"
+#include "edit.h"
 #include "test.h"
 
 #include "BPatch.h"
@@ -33,6 +34,11 @@ static struct testcmd cmds[TEST_MODE_NUM] = {
 		.cmd = FUNCMAP_CMD,
 		.construct = FuncMapTest::construct,
 		.usage = FuncMapTest::staticUsage,
+	},
+	[TEST_MODE_EDIT] = {
+		.cmd = EDIT_CMD,
+		.construct = EditTest::construct,
+		.usage = EditTest::staticUsage,
 	},
 	[TEST_MODE_HELP] = {
 		.cmd = "help",

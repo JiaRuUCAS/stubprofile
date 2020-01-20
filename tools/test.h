@@ -6,6 +6,7 @@
 enum {
 	TEST_MODE_ATTACH = 0,
 	TEST_MODE_FUNCMAP,
+	TEST_MODE_EDIT,
 	TEST_MODE_HELP,
 	TEST_MODE_NUM,
 };
@@ -14,8 +15,6 @@ class Test {
 
 	public:
 		virtual ~Test(void) = default;
-
-		virtual void usage(void) = 0;
 
 		virtual bool parseArgs(int argc, char **argv) = 0;
 		virtual bool init(void) = 0;

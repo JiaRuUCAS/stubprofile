@@ -2,7 +2,8 @@
 ### library that needed to be inserted into the mutatee ####
 set(PROBE_SRC
 		funccnt.c
-		thread.c)
+		thread.c
+		util.c)
 
 add_library(probe SHARED ${PROBE_SRC})
 

@@ -1,19 +1,11 @@
-#ifndef __LIB_FUNC_CNT_H__
-#define __LIB_FUNC_CNT_H__
+#ifndef __LIBPROBE_FUNCC_H__
+#define __LIBPROBE_FUNCC_H__
 
-#if !defined(LIB_EXPORT)
-#define LIB_EXPORT __attribute__((visibility ("default")))
-#endif
+#include "util.h"
 
 struct funcc_counter {
 	uint64_t pre_count;
 	uint64_t post_count;
-};
-
-enum {
-	FUNCC_STATE_UNINIT = 0,
-	FUNCC_STATE_INIT,
-	FUNCC_STATE_ERROR,
 };
 
 struct funcc_thread {
@@ -29,4 +21,4 @@ LIB_EXPORT void funcc_count_thread_exit(void);
 
 void funcc_count_thread_init(void);
 
-#endif // __LIB_FUNC_CNT_H__
+#endif // __LIBPROBE_FUNCC_H__

@@ -1,53 +1,44 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <limits.h>
-#include <stdbool.h>
-
-#include "libfunccnt.h"
-
-
-static __thread struct funcc_thread thread = {
-	.counters = NULL,
-	.state = FUNCC_STATE_UNINIT,
-};
-
-static uint8_t state = FUNCC_STATE_UNINIT;
-
-struct range {
-	unsigned min;
-	unsigned max;
-};
+#include "thread.h"
+#include "funccnt.h"
+#include "util.h"
 
 static struct range idx_range = {
 	.min = 0,
-	.max = UINT_MAX,
+	.max = -1,
 };
 
 #define FUNC_IDX(x) ((x)-idx_range.min)
 
 void funcc_count_pre(unsigned int func)
 {
-	if (thread.state == FUNCC_STATE_UNINIT)
-		funcc_count_thread_init();
+	struct thread_info *thread = probe_get_thread();
+	struct funcc_thread *info = NULL;
 
-	if (thread.state == FUNCC_STATE_ERROR)
+	if (thread->state == PROBE_STATE_UNINIT)
+		probe_thread_init();
+	else if (thread->state != PROBE_STATE_IDLE)
 		return;
 
-	thread.counters[FUNC_IDX(func)].pre_count++;
+	thread->state = PROBE_STATE_RUNNING;
+	info = (struct funcc_thread *)thread->data;
+	info->counters[FUNC_IDX(func)].pre_count++;
+	thread->state = PROBE_STATE_IDLE;
 }
 
 void funcc_count_post(unsigned int func)
 {
-	if (thread.state == FUNCC_STATE_UNINIT)
-		funcc_count_thread_init();
+	struct thread_info *thread = probe_get_thread();
+	struct funcc_thread *info = NULL;
 
-	if (thread.state == FUNCC_STATE_ERROR)
+	if (thread->state == PROBE_STATE_UNINIT)
+		probe_thread_init();
+	else if (thread->state != PROBE_STATE_IDLE)
 		return;
 
-	thread.counters[FUNC_IDX(func)].post_count++;
+	thread->state = PROBE_STATE_RUNNING;
+	info = (struct funcc_thread *)thread->data;
+	info->counters[FUNC_IDX(func)].post_count++;
+	thread->state = PROBE_STATE_IDLE;
 }
 
 void funcc_count_thread_init(void)

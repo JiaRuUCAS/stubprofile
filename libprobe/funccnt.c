@@ -4,7 +4,7 @@
 
 static struct range idx_range = {
 	.min = 0,
-	.max = -1,
+	.max = UINT16_MAX,
 };
 
 #define FUNC_IDX(x) ((x)-idx_range.min)
@@ -41,86 +41,89 @@ void funcc_count_post(unsigned int func)
 	thread->state = PROBE_STATE_IDLE;
 }
 
-void funcc_count_thread_init(void)
+/* Initialize the funcc-specified thread-local data */
+void funcc_data_init(void)
 {
-	if (state != FUNCC_STATE_INIT)
+	struct global_ctl *ctl = &global_ctl;
+	struct thread_info *thread = probe_get_thread();
+	struct funcc_thread *data = NULL;
+	unsigned size = 0, nb_counter = 0;
+
+
+	/* Check whether the global configuration is initialized */
+	if (ctl->state != PROBE_STATE_RUNNING)
 		return;
 
-	if (idx_range.max == UINT_MAX)
+	/* Check whether this thread is already initialized */
+	if (thread->state != PROBE_STATE_UNINIT)
 		return;
 
-	fprintf(stderr, "start init thread\n");
-		
-	unsigned size = idx_range.max - idx_range.min + 1;
+	/* Check if the global configuration is valid */
+	if (idx_range.max == UINT16_MAX)
+		return;
 
-	fprintf(stderr, "number of counters: %u\n", size);
-	thread.counters = (struct funcc_counter *)malloc(
-					size * sizeof(struct funcc_counter));
-	if (thread.counters == NULL) {
-		fprintf(stderr, "Failed to allocate memory for counters\n");
-		thread.state = FUNCC_STATE_ERROR;
+	nb_counter = idx_range.max - idx_range.min + 1;
+	size = sizeof(struct funcc_thread)
+			+ nb_counter * sizeof(struct funcc_counter);
+
+	data = (struct funcc_thread *)malloc(size);
+	if (!data) {
+		LOG_ERROR(thread->pid,
+				"Failed to allocate memory for counters\n");
+		thread->state = PROBE_STATE_ERROR;
 		return;
 	}
 
-	memset(thread.counters, 0,
-					size * sizeof(struct funcc_counter));
-	thread.state = FUNCC_STATE_INIT;
-	fprintf(stderr, "thread inited\n");
+	memset(data, 0, size);
+
+	thread->data = data;
+	thread->state = PROBE_STATE_IDLE;
+
+	LOG_INFO(thread->pid, "Initialize thread %u, with %u counters",
+				   thread->tid, size);
 }
 
-void funcc_count_init(unsigned min, unsigned max)
+/* This function must be called manually after the global
+ * initialization and before the initialization of each thread.
+ * It configures the range of the indices of target functions.
+ */
+void funcc_init(unsigned min, unsigned max)
 {
-	uint8_t exp_state = FUNCC_STATE_UNINIT;
+	if (global_ctl.state != PROBE_STATE_UNINIT)
+		return;
 
 	idx_range.min = min;
 	idx_range.max = max;
 
-	if (__atomic_compare_exchange_n(&state, &exp_state,
-							FUNCC_STATE_INIT, false,
-							__ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE))
-		return;
+	global_ctl.state = PROBE_STATE_RUNNING;
 
-	fprintf(stderr, "start initialization\n");
+	LOG_INFO(global_ctl.pid, "Initialize funcc, min %u, max %u",
+					idx_range.min, idx_range.max);
 
-	funcc_count_thread_init();
-	fprintf(stderr, "finish initializing: min %u, max %u\n",
-					min, max);
+	probe_thread_init();
 }
 
-static void dump_counters(void)
+static void dump_counters(int pid, struct funcc_counter *cnt)
 {
 	unsigned int i = 0, len = idx_range.max - idx_range.min + 1;
-	struct funcc_counter *cnt = NULL;
 
 	for (i = 0; i < len; i++) {
-		cnt = &thread.counters[i];
-		if (cnt->pre_count) {
-			fprintf(stderr, "func[%u]: pre %lu, post %lu\n",
-							i + idx_range.min,
-							cnt->pre_count, cnt->post_count);
-		}
+		LOG_INFO(pid, "func[%u]: pre %lu, post %lu",
+						i + idx_range.min,
+						cnt->pre_count, cnt->post_count);
 	}
 }
 
-void funcc_count_thread_exit(void)
+void funcc_data_free(void)
 {
-	fprintf(stderr, "thread exit\n");
-	if (thread.state == FUNCC_STATE_INIT) {
-		if (thread.counters) {
-			dump_counters();
-			free(thread.counters);
-			thread.counters = NULL;
-		}
-	}
-}
+	struct thread_info *thread = probe_get_thread();
+	struct funcc_thread *data =
+			(struct funcc_thread *)thread->data;
 
-void funcc_count_exit(void)
-{
-	fprintf(stderr, "exiting\n");
-
-	if (state == FUNCC_STATE_INIT) {
-		fprintf(stderr, "inited\n");
-		funcc_count_thread_exit();
+	LOG_INFO(thread->pid, "Release thread-local data");
+	if (data) {
+		dump_counters(thread->pid, data->counters);
+		free(data);
+		thread->data = NULL;
 	}
-	fprintf(stderr, "finished\n");
 }

@@ -57,3 +57,5 @@ dyninst/makedir/*
 
 *CMakeFiles/*
 Makefile
+
+test/test-probe

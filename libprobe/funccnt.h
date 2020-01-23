@@ -9,16 +9,15 @@ struct funcc_counter {
 };
 
 struct funcc_thread {
-	struct funcc_counter *counters;
 	unsigned state;
+	struct funcc_counter counters[];
 };
 
 LIB_EXPORT void funcc_count_pre(unsigned int func);
 LIB_EXPORT void funcc_count_post(unsigned int func);
-LIB_EXPORT void funcc_count_init(unsigned min, unsigned max);
-LIB_EXPORT void funcc_count_exit(void);
-LIB_EXPORT void funcc_count_thread_exit(void);
+LIB_EXPORT void funcc_init(unsigned min, unsigned max);
 
-void funcc_count_thread_init(void);
+void funcc_data_free(void);
+void funcc_data_init(void);
 
 #endif // __LIBPROBE_FUNCC_H__
